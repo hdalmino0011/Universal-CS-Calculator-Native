@@ -570,11 +570,7 @@
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                 <span>ABOUT CALCULATOR</span>
             </button>
-            <button id="drawerClearCacheBtn" class="drawer-action-btn">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                <span>CLEAR CACHE</span>
-            </button>
-            <button id="drawerExitBtn" class="drawer-action-btn danger-action">
+            <button id="drawerExitBtn" class="drawer-action-btn danger-action" title="Reset session, clear cache and history">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
                 <span>RESET SESSION</span>
             </button>
@@ -582,6 +578,29 @@
     </div>
 </div>
 <div id="overlay" class="overlay" aria-hidden="true"></div>
+
+<!-- Reset Session Confirmation Modal -->
+<div id="resetConfirmModal" class="update-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="resetModalTitle">
+    <div class="update-modal-overlay" id="resetModalOverlay"></div>
+    <div class="update-modal-content">
+        <div class="update-modal-header" style="color: #ef4444;">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <div class="update-modal-title" id="resetModalTitle" style="color: #ef4444;">RESET SESSION &amp; DATA</div>
+        </div>
+        <div class="update-modal-message" id="resetModalMessage" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); text-align: center;">
+            <p style="margin-bottom: 8px;"><strong>Are you sure you want to reset the application session?</strong></p>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">This will restart the app and delete the app's data, clear cached files, and erase your complete history of calculations.</p>
+        </div>
+        <div class="update-modal-buttons">
+            <button id="resetCancelBtn" class="action-btn" style="flex: 1;">CANCEL</button>
+            <button id="resetConfirmBtn" class="action-btn danger-btn" style="flex: 1; background: #dc2626; color: #ffffff;">OK</button>
+        </div>
+    </div>
+</div>
 
 <!-- Update Modal -->
 <div id="updateModal" class="update-modal" style="display: none;">

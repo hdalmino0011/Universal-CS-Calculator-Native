@@ -271,6 +271,9 @@ function showCodeTracerView() {
     if (codeTracerView) codeTracerView.style.display = 'flex';
     updateTracerToggleBtnState(true);
     updateDrawerActiveState('tracer');
+    if (window.initCodeTracer) {
+        window.initCodeTracer();
+    }
     if (window.updateTracerLineNumbers) {
         window.updateTracerLineNumbers();
     }
@@ -1934,34 +1937,42 @@ function toggleDrawer(open) {
     if (overlay) overlay.classList.toggle('active', open);
 }
 
-function clearCache() {
-    if (confirm('Clear calculation history, saved preferences, and reset app?')) {
-        localStorage.clear();
-        historyEntries = [];
-        saveHistory();
-        initTheme();
-        initFont();
-        keyboardEnabled = false;
-        localStorage.setItem('keyboardEnabled', 'false');
-        applyKeyboardState();
-        exprInput.value = '';
-        resultDisplay.textContent = '0';
-        fallbackMessage.style.display = 'none';
-        updateDesktopSidePanel('', '', '');
-        showToast('App reset to clean defaults.');
+function promptResetSession() {
+    var modal = document.getElementById('resetConfirmModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    } else if (confirm('Are you sure you want to reset the session? This will restart the app and delete the app\'s data, cache, and your complete history of calculations with OK/Cancel.')) {
+        executeResetSession();
     }
 }
 
-function hardResetAndRefresh() {
-    if (confirm('Reload application and refresh cache?')) {
+function closeResetModal() {
+    var modal = document.getElementById('resetConfirmModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function executeResetSession() {
+    closeResetModal();
+    try {
         localStorage.clear();
-        if ('caches' in window) {
-            caches.keys().then(function(names) {
-                for (var i = 0; i < names.length; i++) caches.delete(names[i]);
-            });
-        }
-        window.location.reload(true);
+    } catch (e) {}
+    try {
+        sessionStorage.clear();
+    } catch (e) {}
+    historyEntries = [];
+    if ('caches' in window) {
+        caches.keys().then(function(names) {
+            for (var i = 0; i < names.length; i++) caches.delete(names[i]);
+        });
     }
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+            for (var i = 0; i < regs.length; i++) regs[i].unregister();
+        });
+    }
+    // Hard refresh with cache-busting timestamp to fully restart the app
+    var cleanUrl = window.location.pathname + '?reset=' + Date.now();
+    window.location.replace(cleanUrl);
 }
 
 // Update modal logic
@@ -2006,30 +2017,532 @@ function doUpdateNow() {
 // ================= CONTENT PAGES =================
 function showHelpPage() {
     var helpHtml = '<div class="about-text">' +
-        '<h3>HOW TO USE THIS CALCULATOR</h3>' +
-        '<p><strong>Universal CS Calculator</strong> provides comprehensive, verified step-by-step evaluations across Computer Science disciplines with zero internet connection required.</p>' +
-        '<h3>--- BASIC & SCIENTIFIC ARITHMETIC ---</h3>' +
-        '<p><strong>Operations:</strong> +, −, ×, ÷, ^ (Power), % (Modulo), ! (Factorial), √ (Square Root)</p>' +
-        '<p><strong>Functions:</strong> sin(x), cos(x), tan(x), abs(x), log(x), ln(x)</p>' +
-        '<p><strong>Constants:</strong> π (3.14159...), e (2.71828...)</p>' +
-        '<h3>--- BITWISE OPERATORS ---</h3>' +
-        '<p><code>a &amp; b</code> (AND), <code>a | b</code> (OR), <code>a ^ b</code> (XOR), <code>~a</code> (NOT), <code>a &lt;&lt; b</code> (Left Shift), <code>a &gt;&gt; b</code> (Right Shift) with automatic 8-bit/32-bit column breakdown.</p>' +
-        '<h3>--- NUMBER SYSTEM CONVERSIONS ---</h3>' +
-        '<p><strong>Usage:</strong> Tap <code>DEC → BINARY</code> and enter <code>255</code> to view full repeated-division remainder tables and place-value polynomials.</p>' +
-        '<h3>--- NUMBER THEORY ---</h3>' +
-        '<p><code>gcd(120, 45)</code>, <code>lcm(12, 18)</code>, <code>prime?(104729)</code>, <code>factor(360)</code>, <code>phi(36)</code>, <code>modpow(7, 256, 13)</code></p>' +
-        '<h3>--- COMBINATORICS ---</h3>' +
-        '<p><code>nCr(10, 3)</code>, <code>nPr(8, 4)</code>, <code>6!</code></p>' +
-        '<h3>--- PROPOSITIONAL LOGIC ---</h3>' +
-        '<p><code>TRUE AND (FALSE OR TRUE)</code>, <code>TRUE IMPLIES FALSE</code>, <code>p EQUIV q</code></p>' +
-        '<h3>--- SET THEORY ---</h3>' +
-        '<p><code>{1,2,3} UNION {3,4,5}</code>, <code>{1,2,3} ∩ {2,3,4}</code>, <code>{1,2,3} \\ {2}</code>, <code>POWERSET({1,2,3})</code>, <code>SUBSET({1,2}, {1,2,3})</code></p>' +
-        '<h3>--- MATRIX (2×2) ---</h3>' +
-        '<p><code>det2x2(1,2,3,4)</code>, <code>inv2x2(1,2,3,4)</code>, <code>add2x2(1,2,3,4,5,6,7,8)</code>, <code>mul2x2(1,2,3,4,5,6,7,8)</code></p>' +
-        '<h3>--- COMPLEX NUMBERS ---</h3>' +
-        '<p><code>re(3+4i)</code>, <code>im(3+4i)</code>, <code>conj(3+4i)</code>, <code>abs(3+4i)</code>, <code>arg(3+4i)</code>, <code>polar(3+4i)</code></p>' +
+        '<div class="help-guide-intro">' +
+            '<h2>HOW TO ENTER MATHEMATICAL &amp; CS EXPRESSIONS</h2>' +
+            '<p>Universal CS Calculator accepts standard mathematical notation, programming operators, and specialized Computer Science functions. You can type using your device keyboard or tap the calculator buttons.</p>' +
+            '<div class="help-tip-box" style="margin-top:10px; margin-bottom:6px;">' +
+                '<div class="help-tip-title">ESSENTIAL INPUT RULES</div>' +
+                '<ul style="margin:4px 0 0 16px; padding:0; font-size:0.83rem; line-height:1.6;">' +
+                    '<li><strong>Evaluate:</strong> Press <code>=</code> (EVAL) or hit <kbd>Enter</kbd> on your keyboard.</li>' +
+                    '<li><strong>Step-by-Step Breakdown:</strong> Tap the large <strong>Result Box</strong> anytime to view every mathematical step, intermediate truth tables, and full proofs.</li>' +
+                    '<li><strong>Parentheses:</strong> Always pair opening <code>(</code> with closing <code>)</code>, e.g., <code>(5 + 3) * 4</code>.</li>' +
+                    '<li><strong>Function Arguments:</strong> Separate multiple arguments with a comma <code>,</code>, e.g., <code>gcd(120, 45)</code> or <code>nCr(10, 3)</code>.</li>' +
+                    '<li><strong>Implicit Multiplication:</strong> Writing <code>2(3+4)</code>, <code>5pi</code>, or <code>4sqrt(16)</code> automatically multiplies.</li>' +
+                    '<li><strong>Case-Insensitive:</strong> Operators can be lowercase or uppercase: <code>and</code>, <code>AND</code>, <code>gcd</code>, <code>GCD</code>.</li>' +
+                    '<li><strong>Previous Answer:</strong> Use <code>ans</code> to reuse the value from your last calculation.</li>' +
+                '</ul>' +
+            '</div>' +
+        '</div>' +
+
+        // BASIC & SCIENTIFIC ARITHMETIC
+        '<div class="help-category-card">' +
+            '<div class="help-category-header">' +
+                '<div class="help-category-title">Arithmetic &amp; Scientific Operations</div>' +
+                '<span class="help-category-badge">Math</span>' +
+            '</div>' +
+            '<div class="help-item-list">' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Addition &amp; Subtraction</span>' +
+                        '<code class="help-code-tag">a + b &nbsp;|&nbsp; a - b</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Standard real number addition and subtraction, including negative numbers.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">145.5 + 234.75</code> <span class="help-result-pill">&rarr; Result: 380.25</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Multiplication &amp; Division</span>' +
+                        '<code class="help-code-tag">a * b &nbsp;|&nbsp; a / b</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Supports <code>*</code> or <code>&times;</code> for multiply, and <code>/</code> or <code>&divide;</code> for divide.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">24 * (18 / 3)</code> <span class="help-result-pill">&rarr; Result: 144</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Exponentiation &amp; Powers</span>' +
+                        '<code class="help-code-tag">a ^ b &nbsp;|&nbsp; pow(base, exp)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Calculates base raised to the power of exponent.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">2 ^ 10</code> or <code class="help-example-code">pow(2, 10)</code> <span class="help-result-pill">&rarr; Result: 1024</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Modulo (Remainder)</span>' +
+                        '<code class="help-code-tag">a % b &nbsp;|&nbsp; a mod b</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Returns integer remainder after division of a by b.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">29 % 6</code> <span class="help-result-pill">&rarr; Result: 5</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Roots (Square &amp; Cube)</span>' +
+                        '<code class="help-code-tag">sqrt(x) &nbsp;|&nbsp; cbrt(x)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Computes the square root or cube root of x.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">sqrt(144) + cbrt(27)</code> <span class="help-result-pill">&rarr; Result: 15</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Absolute Value</span>' +
+                        '<code class="help-code-tag">abs(x)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Returns the positive magnitude of a number.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">abs(-42)</code> <span class="help-result-pill">&rarr; Result: 42</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Logarithms</span>' +
+                        '<code class="help-code-tag">log(x) &nbsp;|&nbsp; ln(x) &nbsp;|&nbsp; log2(x)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Common log (base 10), natural log (base e), and computer science binary log (base 2).</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">log2(256) + log(1000)</code> <span class="help-result-pill">&rarr; Result: 8 + 3 = 11</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Trigonometry</span>' +
+                        '<code class="help-code-tag">sin(x), cos(x), tan(x), asin, acos, atan</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Trigonometric and inverse trigonometric functions.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">sin(90)</code> <span class="help-result-pill">&rarr; Result: 1</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Constants</span>' +
+                        '<code class="help-code-tag">pi &nbsp;|&nbsp; e</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Standard mathematical constants &pi; (3.14159...) and Euler\'s number e (2.71828...).</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">2 * pi * 5</code> <span class="help-result-pill">&rarr; Result: 31.4159...</span></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        // BITWISE OPERATORS
+        '<div class="help-category-card">' +
+            '<div class="help-category-header">' +
+                '<div class="help-category-title">Bitwise &amp; Digital Logic</div>' +
+                '<span class="help-category-badge">Binary</span>' +
+            '</div>' +
+            '<div class="help-item-list">' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Bitwise AND</span>' +
+                        '<code class="help-code-tag">a &amp; b</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Compares each bit of two numbers; produces 1 if both bits are 1.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">12 &amp; 10</code> (1100 &amp; 1010) <span class="help-result-pill">&rarr; Result: 8 (1000)</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Bitwise OR</span>' +
+                        '<code class="help-code-tag">a | b</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Compares each bit; produces 1 if at least one bit is 1.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">12 | 10</code> (1100 | 1010) <span class="help-result-pill">&rarr; Result: 14 (1110)</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Bitwise XOR</span>' +
+                        '<code class="help-code-tag">a ^ b &nbsp;|&nbsp; xor(a, b)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Exclusive OR: produces 1 only when bits are different.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">12 ^ 10</code> (1100 ^ 1010) <span class="help-result-pill">&rarr; Result: 6 (0110)</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Bitwise NOT (Inversion)</span>' +
+                        '<code class="help-code-tag">~a</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Inverts all bits (one\'s complement).</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">~5</code> <span class="help-result-pill">&rarr; Result: -6</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Bit Shifts (Left &amp; Right)</span>' +
+                        '<code class="help-code-tag">a &lt;&lt; b &nbsp;|&nbsp; a &gt;&gt; b</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Shifts bits left (multiplication by 2<sup>b</sup>) or right (division by 2<sup>b</sup>).</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">3 &lt;&lt; 2</code> <span class="help-result-pill">&rarr; Result: 12</span> &nbsp;|&nbsp; <code class="help-example-code">16 &gt;&gt; 2</code> <span class="help-result-pill">&rarr; Result: 4</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Hex &amp; Binary Literals</span>' +
+                        '<code class="help-code-tag">0x... &nbsp;|&nbsp; 0b...</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Enter hexadecimal or binary values directly using standard prefixes.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">0xFF + 1</code> <span class="help-result-pill">&rarr; Result: 256</span></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        // NUMBER SYSTEM CONVERSIONS
+        '<div class="help-category-card">' +
+            '<div class="help-category-header">' +
+                '<div class="help-category-title">Number System Conversions</div>' +
+                '<span class="help-category-badge">Radix</span>' +
+            '</div>' +
+            '<div class="help-item-list">' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Decimal to Binary</span>' +
+                        '<code class="help-code-tag">bin(n) &nbsp;|&nbsp; dec2bin(n)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Converts base 10 to base 2 with full repeated division steps.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">bin(255)</code> <span class="help-result-pill">&rarr; Result: 11111111</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Decimal to Hexadecimal</span>' +
+                        '<code class="help-code-tag">hex(n) &nbsp;|&nbsp; dec2hex(n)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Converts base 10 to base 16.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">hex(255)</code> <span class="help-result-pill">&rarr; Result: FF</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Decimal to Octal</span>' +
+                        '<code class="help-code-tag">oct(n) &nbsp;|&nbsp; dec2oct(n)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Converts base 10 to base 8.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">oct(255)</code> <span class="help-result-pill">&rarr; Result: 377</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Base to Decimal</span>' +
+                        '<code class="help-code-tag">bin2dec(x) &nbsp;|&nbsp; hex2dec(x) &nbsp;|&nbsp; oct2dec(x)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Converts binary, hex, or octal string to decimal with place-value polynomials.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">bin2dec(10110101)</code> <span class="help-result-pill">&rarr; Result: 181</span></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        // NUMBER THEORY & CRYPTOGRAPHY
+        '<div class="help-category-card">' +
+            '<div class="help-category-header">' +
+                '<div class="help-category-title">Number Theory &amp; Cryptography</div>' +
+                '<span class="help-category-badge">Algorithms</span>' +
+            '</div>' +
+            '<div class="help-item-list">' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Greatest Common Divisor</span>' +
+                        '<code class="help-code-tag">gcd(a, b)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Computes GCD via Euclidean Algorithm with step-by-step remainder table.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">gcd(120, 45)</code> <span class="help-result-pill">&rarr; Result: 15</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Least Common Multiple</span>' +
+                        '<code class="help-code-tag">lcm(a, b)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Computes the smallest positive integer divisible by both a and b.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">lcm(12, 18)</code> <span class="help-result-pill">&rarr; Result: 36</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Primality Test</span>' +
+                        '<code class="help-code-tag">prime?(n) &nbsp;|&nbsp; isPrime(n)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Checks whether a positive integer is prime or composite.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">prime?(104729)</code> <span class="help-result-pill">&rarr; Result: TRUE (Prime)</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Prime Factorization</span>' +
+                        '<code class="help-code-tag">factor(n)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Decomposes n into its prime factor representation with exponents.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">factor(360)</code> <span class="help-result-pill">&rarr; Result: 2^3 * 3^2 * 5</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Euler\'s Totient Function</span>' +
+                        '<code class="help-code-tag">phi(n)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Counts positive integers up to n that are relatively prime to n.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">phi(36)</code> <span class="help-result-pill">&rarr; Result: 12</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Modular Exponentiation</span>' +
+                        '<code class="help-code-tag">modpow(base, exp, mod)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Fast (base<sup>exp</sup> mod m) computation used in RSA cryptography.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">modpow(7, 256, 13)</code> <span class="help-result-pill">&rarr; Result: 9</span></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        // COMBINATORICS
+        '<div class="help-category-card">' +
+            '<div class="help-category-header">' +
+                '<div class="help-category-title">Combinatorics &amp; Counting</div>' +
+                '<span class="help-category-badge">Discrete</span>' +
+            '</div>' +
+            '<div class="help-item-list">' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Combinations (n Choose r)</span>' +
+                        '<code class="help-code-tag">nCr(n, r)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Calculates n! / (r! &times; (n - r)!). Order does not matter.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">nCr(10, 3)</code> <span class="help-result-pill">&rarr; Result: 120</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Permutations</span>' +
+                        '<code class="help-code-tag">nPr(n, r)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Calculates n! / (n - r)!. Order matters.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">nPr(8, 4)</code> <span class="help-result-pill">&rarr; Result: 1680</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Factorial</span>' +
+                        '<code class="help-code-tag">n! &nbsp;|&nbsp; fact(n)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Product of all positive integers less than or equal to n.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">6!</code> <span class="help-result-pill">&rarr; Result: 720</span></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        // PROPOSITIONAL LOGIC
+        '<div class="help-category-card">' +
+            '<div class="help-category-header">' +
+                '<div class="help-category-title">Propositional Logic &amp; Truth Tables</div>' +
+                '<span class="help-category-badge">Logic</span>' +
+            '</div>' +
+            '<div class="help-item-list">' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Boolean Values</span>' +
+                        '<code class="help-code-tag">TRUE &nbsp;|&nbsp; FALSE</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Represents truth values. 1 and 0 are also accepted.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">TRUE AND FALSE</code> <span class="help-result-pill">&rarr; Result: FALSE</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Logical AND, OR, NOT</span>' +
+                        '<code class="help-code-tag">AND, OR, NOT &nbsp;|&nbsp; &amp;&amp;, ||, !</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Standard logical connectives with operator precedence.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">(TRUE OR FALSE) AND NOT FALSE</code> <span class="help-result-pill">&rarr; Result: TRUE</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Implication (Conditional)</span>' +
+                        '<code class="help-code-tag">P IMPLIES Q &nbsp;|&nbsp; P -&gt; Q</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">False only when premise P is true and conclusion Q is false.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">TRUE IMPLIES FALSE</code> <span class="help-result-pill">&rarr; Result: FALSE</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Equivalence (Biconditional)</span>' +
+                        '<code class="help-code-tag">P EQUIV Q &nbsp;|&nbsp; P &lt;-&gt; Q</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">True when both operands have identical truth values.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">FALSE EQUIV FALSE</code> <span class="help-result-pill">&rarr; Result: TRUE</span></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        // SET THEORY
+        '<div class="help-category-card">' +
+            '<div class="help-category-header">' +
+                '<div class="help-category-title">Set Theory Operations</div>' +
+                '<span class="help-category-badge">Sets</span>' +
+            '</div>' +
+            '<div class="help-item-list">' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Set Notation</span>' +
+                        '<code class="help-code-tag">{1, 2, 3}</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Sets are written inside curly braces with comma-separated elements.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">{1, 2, 3}</code></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Set Union</span>' +
+                        '<code class="help-code-tag">A UNION B &nbsp;|&nbsp; A &cup; B</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Combines elements from both sets with duplicate values removed.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">{1, 2, 3} UNION {3, 4, 5}</code> <span class="help-result-pill">&rarr; Result: {1, 2, 3, 4, 5}</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Set Intersection</span>' +
+                        '<code class="help-code-tag">A INTERSECT B &nbsp;|&nbsp; A &cap; B</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Finds elements common to both sets.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">{1, 2, 3} INTERSECT {2, 3, 4}</code> <span class="help-result-pill">&rarr; Result: {2, 3}</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Set Difference</span>' +
+                        '<code class="help-code-tag">A DIFF B &nbsp;|&nbsp; A \\ B</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Elements in A that are not in B.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">{1, 2, 3} DIFF {2}</code> <span class="help-result-pill">&rarr; Result: {1, 3}</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Symmetric Difference</span>' +
+                        '<code class="help-code-tag">A SYMDIFF B</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Elements in either set, but not in both.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">{1, 2, 3} SYMDIFF {2, 3, 4}</code> <span class="help-result-pill">&rarr; Result: {1, 4}</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Subset Verification</span>' +
+                        '<code class="help-code-tag">SUBSET(A, B)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Checks if set A is a subset of set B.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">SUBSET({1, 2}, {1, 2, 3})</code> <span class="help-result-pill">&rarr; Result: TRUE</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Power Set &amp; Cardinality</span>' +
+                        '<code class="help-code-tag">POWERSET(A) &nbsp;|&nbsp; card(A)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Generates all subsets (2<sup>|A|</sup> elements) or measures set size.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">card({1, 2, 3, 4})</code> <span class="help-result-pill">&rarr; Result: 4</span></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        // MATRIX 2x2
+        '<div class="help-category-card">' +
+            '<div class="help-category-header">' +
+                '<div class="help-category-title">Matrix Algebra (2&times;2)</div>' +
+                '<span class="help-category-badge">Linear Algebra</span>' +
+            '</div>' +
+            '<div class="help-item-list">' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Matrix Format</span>' +
+                        '<code class="help-code-tag">(a, b, c, d)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Entered as 4 comma-separated values representing row 1 [a, b] and row 2 [c, d].</p>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Determinant</span>' +
+                        '<code class="help-code-tag">det2x2(a, b, c, d)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Calculates ad - bc with explicit multiplication steps.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">det2x2(1, 2, 3, 4)</code> <span class="help-result-pill">&rarr; Result: 1*4 - 2*3 = -2</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Inverse Matrix</span>' +
+                        '<code class="help-code-tag">inv2x2(a, b, c, d)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Computes 1/det &times; [d, -b; -c, a].</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">inv2x2(1, 2, 3, 4)</code> <span class="help-result-pill">&rarr; Result: [-2, 1; 1.5, -0.5]</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Matrix Multiplication</span>' +
+                        '<code class="help-code-tag">mul2x2(a1, b1, c1, d1, a2, b2, c2, d2)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Multiplies two 2&times;2 matrices with dot-product steps.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">mul2x2(1,2,3,4, 2,0,1,2)</code> <span class="help-result-pill">&rarr; Result: [4, 4; 10, 8]</span></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        // COMPLEX NUMBERS
+        '<div class="help-category-card">' +
+            '<div class="help-category-header">' +
+                '<div class="help-category-title">Complex Numbers</div>' +
+                '<span class="help-category-badge">Complex</span>' +
+            '</div>' +
+            '<div class="help-item-list">' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Complex Representation</span>' +
+                        '<code class="help-code-tag">a + bi &nbsp;|&nbsp; a - bi</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Write complex expressions with standard imaginary unit <code>i</code>.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">(3 + 4i) + (2 - 5i)</code> <span class="help-result-pill">&rarr; Result: 5 - 1i</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Real &amp; Imaginary Parts</span>' +
+                        '<code class="help-code-tag">re(z) &nbsp;|&nbsp; im(z)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Extracts the real component or imaginary coefficient.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">re(3 + 4i)</code> <span class="help-result-pill">&rarr; 3</span> &nbsp;|&nbsp; <code class="help-example-code">im(3 + 4i)</code> <span class="help-result-pill">&rarr; 4</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Conjugate &amp; Modulus</span>' +
+                        '<code class="help-code-tag">conj(z) &nbsp;|&nbsp; abs(z)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Computes complex conjugate (a - bi) and absolute magnitude &radic;(a<sup>2</sup> + b<sup>2</sup>).</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">abs(3 + 4i)</code> <span class="help-result-pill">&rarr; Result: 5</span></div>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Argument &amp; Polar Form</span>' +
+                        '<code class="help-code-tag">arg(z) &nbsp;|&nbsp; polar(z)</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Computes phase angle &theta; in degrees/radians or polar magnitude.</p>' +
+                    '<div class="help-item-example">Example: <code class="help-example-code">polar(3 + 4i)</code> <span class="help-result-pill">&rarr; Result: 5 &ang; 53.13&deg;</span></div>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        // CODE TRACER & DSA
+        '<div class="help-category-card">' +
+            '<div class="help-category-header">' +
+                '<div class="help-category-title">Code Tracer &amp; DSA Visualizer</div>' +
+                '<span class="help-category-badge">Algorithms</span>' +
+            '</div>' +
+            '<div class="help-item-list">' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">How to Access</span>' +
+                        '<code class="help-code-tag">Drawer &rarr; Code Tracer &amp; DSA</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Open the side drawer menu and select <strong>Code Tracer &amp; DSA</strong> to switch into the interactive algorithm studio.</p>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Supported Languages</span>' +
+                        '<code class="help-code-tag">Python &bull; C++ &bull; Java &bull; JS &bull; C &bull; Rust</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Select your desired language, choose from curated DSA presets (Binary Search, Two Sum, Bubble Sort, Kadane\'s, Recursion, etc.), or type your own algorithm.</p>' +
+                '</div>' +
+                '<div class="help-item-row">' +
+                    '<div class="help-item-top">' +
+                        '<span class="help-item-name">Execution &amp; Visual Tabs</span>' +
+                        '<code class="help-code-tag">Trace &amp; Execute Code</code>' +
+                    '</div>' +
+                    '<p class="help-item-desc">Use the step-by-step playback scrubber, play/pause controls, and inspect the <strong>Narrative</strong>, <strong>Variable Matrix</strong>, <strong>DSA Array &amp; Pointer Visualizer</strong>, and <strong>Call Stack</strong> at each line.</p>' +
+                '</div>' +
+            '</div>' +
+        '</div>' +
+
+        // COMMON MISTAKES & HOW TO FIX THEM
+        '<div class="help-tip-box warning-tip" style="margin-top:16px;">' +
+            '<div class="help-tip-title">HOW TO AVOID COMMON INPUT ERRORS</div>' +
+            '<ul style="margin:6px 0 0 16px; padding:0; font-size:0.83rem; line-height:1.6;">' +
+                '<li><strong>Unbalanced Brackets:</strong> Typing <code>(5 + 3 * 2</code> will trigger a syntax notice. Always ensure every open <code>(</code> or <code>{</code> has a closing <code>)</code> or <code>}</code>.</li>' +
+                '<li><strong>Missing Function Commas:</strong> Entering <code>gcd(120 45)</code> fails because the arguments blend together. Always place a comma between parameters: <code>gcd(120, 45)</code>.</li>' +
+                '<li><strong>Division by Zero:</strong> Expressions like <code>10 / 0</code> or <code>15 % 0</code> are mathematically undefined and will indicate division by zero.</li>' +
+                '<li><strong>Radix Bounds:</strong> In binary conversions (<code>bin2dec</code>), only digits <code>0</code> and <code>1</code> are valid. For hexadecimal (<code>hex2dec</code>), valid characters are <code>0-9</code> and <code>A-F</code>.</li>' +
+            '</ul>' +
+        '</div>' +
+
         '</div>';
-    showFullPage('HELP / DOCUMENTATION', helpHtml);
+    showFullPage('HELP / HOW TO USE', helpHtml);
 }
 
 function showPrivacyPage() {
@@ -2049,7 +2562,7 @@ function showPrivacyPage() {
         '<li>Theme preference</li>' +
         '<li>Font preference</li>' +
         '</ul>' +
-        '<p>Clear it anytime via "Clear Cache" in the app.</p>' +
+        '<p>Reset or erase all stored data anytime via "Reset Session" in the navigation drawer.</p>' +
         '<h3>4. Third-Party Services</h3>' +
         '<p>No analytics, advertising, or tracking services are used.</p>' +
         '<h3>5. Internet Usage</h3>' +
@@ -2262,14 +2775,30 @@ function init() {
     }
 
     // Drawer content links
-    document.getElementById('drawerHelpBtn').onclick = function() { toggleDrawer(false); showHelpPage(); };
-    document.getElementById('drawerPrivacyBtn').onclick = function() { toggleDrawer(false); showPrivacyPage(); };
-    document.getElementById('drawerThemesBtn').onclick = function() { toggleDrawer(false); showThemesPage(); };
-    document.getElementById('drawerFontBtn').onclick = function() { toggleDrawer(false); showFontPage(); };
-    document.getElementById('drawerHistoryBtn').onclick = function() { toggleDrawer(false); showHistoryPage(); };
-    document.getElementById('drawerAboutBtn').onclick = function() { toggleDrawer(false); showAboutPage(); };
-    document.getElementById('drawerClearCacheBtn').onclick = function() { toggleDrawer(false); clearCache(); };
-    document.getElementById('drawerExitBtn').onclick = function() { toggleDrawer(false); hardResetAndRefresh(); };
+    var drawerHelpBtn = document.getElementById('drawerHelpBtn');
+    if (drawerHelpBtn) drawerHelpBtn.onclick = function() { toggleDrawer(false); showHelpPage(); };
+    var drawerPrivacyBtn = document.getElementById('drawerPrivacyBtn');
+    if (drawerPrivacyBtn) drawerPrivacyBtn.onclick = function() { toggleDrawer(false); showPrivacyPage(); };
+    var drawerThemesBtn = document.getElementById('drawerThemesBtn');
+    if (drawerThemesBtn) drawerThemesBtn.onclick = function() { toggleDrawer(false); showThemesPage(); };
+    var drawerFontBtn = document.getElementById('drawerFontBtn');
+    if (drawerFontBtn) drawerFontBtn.onclick = function() { toggleDrawer(false); showFontPage(); };
+    var drawerHistoryBtn = document.getElementById('drawerHistoryBtn');
+    if (drawerHistoryBtn) drawerHistoryBtn.onclick = function() { toggleDrawer(false); showHistoryPage(); };
+    var drawerAboutBtn = document.getElementById('drawerAboutBtn');
+    if (drawerAboutBtn) drawerAboutBtn.onclick = function() { toggleDrawer(false); showAboutPage(); };
+    var drawerClearCacheBtn = document.getElementById('drawerClearCacheBtn');
+    if (drawerClearCacheBtn) drawerClearCacheBtn.onclick = function() { toggleDrawer(false); promptResetSession(); };
+    var drawerExitBtn = document.getElementById('drawerExitBtn');
+    if (drawerExitBtn) drawerExitBtn.onclick = function() { toggleDrawer(false); promptResetSession(); };
+
+    // Reset Confirmation Modal buttons
+    var resetCancelBtn = document.getElementById('resetCancelBtn');
+    if (resetCancelBtn) resetCancelBtn.onclick = closeResetModal;
+    var resetModalOverlay = document.getElementById('resetModalOverlay');
+    if (resetModalOverlay) resetModalOverlay.onclick = closeResetModal;
+    var resetConfirmBtn = document.getElementById('resetConfirmBtn');
+    if (resetConfirmBtn) resetConfirmBtn.onclick = executeResetSession;
 
     // Action buttons
     document.getElementById('equalBtn').onclick = evaluate;
