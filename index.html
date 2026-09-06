@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Universal CS Calculator | Mobile CS & Scientific Calculator</title>
+    <meta name="description" content="Native Universal Computer Science and Scientific Calculator for mobile phones with full offline capabilities, step-by-step mathematical proofs across 9 CS disciplines, and iconic Marvel-style animated intro.">
+    <meta property="og:title" content="Universal CS Calculator">
+    <meta property="og:description" content="Native Universal Computer Science and Scientific Calculator for mobile phones with full offline capabilities, step-by-step mathematical proofs across 9 CS disciplines, and iconic Marvel-style animated intro.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#08090d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+
+<!-- Marvel-Style Cinematic Splash Screen -->
+<div id="splashScreen" class="splash-screen" role="dialog" aria-modal="true" aria-label="HDDev Introduction">
+    <div class="splash-backdrop"></div>
+    <div class="splash-ambient-glow" aria-hidden="true"></div>
+    
+    <div class="splash-content" id="splashContent">
+        <!-- Rapid Comic/Math Symbols Flipbook Reel -->
+        <div class="marvel-comic-flipbook" id="marvelFlipbook" aria-hidden="true">
+            <div class="flip-text-reel" id="flipTextReel">
+                <span class="flip-tag">∑ nCr</span>
+                <span class="flip-tag">01011001</span>
+                <span class="flip-tag">det(A)</span>
+                <span class="flip-tag">modpow</span>
+                <span class="flip-tag">λ(x)</span>
+                <span class="flip-tag">A ∪ B</span>
+                <span class="flip-tag">f(x)</span>
+                <span class="flip-tag">i² = -1</span>
+                <span class="flip-tag">p ↔ q</span>
+                <span class="flip-tag">gcd(a,b)</span>
+                <span class="flip-tag">O(n log n)</span>
+                <span class="flip-tag">HDDev</span>
+            </div>
+        </div>
+
+        <!-- Iconic Marvel-Style Red Block Container -->
+        <div class="marvel-block-container" id="marvelBlockContainer">
+            <div class="marvel-badge" id="marvelBadge">
+                <!-- Specular light sheen flare sweep -->
+                <div class="marvel-sheen" aria-hidden="true"></div>
+                <h1 class="marvel-title" id="marvelTitle">HDDev</h1>
+            </div>
+        </div>
+
+        <!-- Subtitle: POWERED BY GITHUB -->
+        <div class="marvel-subtitle-container" id="marvelSubtitleContainer">
+            <div class="marvel-sub-line left" aria-hidden="true"></div>
+            <div class="github-branding">
+                <svg class="github-svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                <span class="github-sub-text">POWERED BY GITHUB</span>
+            </div>
+            <div class="marvel-sub-line right" aria-hidden="true"></div>
+        </div>
+
+        <!-- Tap or Skip Pill -->
+        <button class="splash-skip-pill" id="splashSkipBtn" aria-label="Skip intro animation">SKIP</button>
+    </div>
+</div>
+
+<!-- Native Mobile Phone Enclosure -->
+<div class="mobile-device-wrapper" id="mobileDeviceWrapper">
+    <div class="phone-frame" id="phoneFrame">
+        <!-- Top Speaker & Camera Dynamic Notch (for desktop preview) -->
+        <div class="phone-notch-bar" aria-hidden="true">
+            <div class="phone-dynamic-island">
+                <span class="island-camera"></span>
+                <span class="island-sensor"></span>
+            </div>
+        </div>
+
+        <!-- Mobile Status Bar (Time & Connectivity) -->
+        <div class="phone-status-bar" id="phoneStatusBar">
+            <span class="status-time" id="mobileStatusClock">9:41</span>
+            <div class="status-icons">
+                <svg class="status-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                    <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z"/>
+                </svg>
+                <svg class="status-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                    <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.66-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
+                </svg>
+                <div class="battery-indicator" title="Battery: 100%">
+                    <div class="battery-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-container" id="appContainer">
+            <!-- Top Navigation Bar -->
+            <header class="top-bar" id="mainTopBar">
+                <button class="menu-btn icon-btn" id="menuToggleBtn" aria-label="Open menu" title="Calculator Modes & Settings">
+                    <svg class="svg-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+
+                <div class="title-wrap" id="headerTitleWrap">
+                    <div class="title" id="appTitle">UNIVERSAL CS CALCULATOR</div>
+                    <div id="branchIndicator" class="branch-indicator">Universal (Scientific)</div>
+                </div>
+
+                <div class="top-actions">
+                    <button class="menu-btn icon-btn" id="viewStepsBtn" aria-label="View step-by-step working" title="Inspect step-by-step evaluation">
+                        <svg class="svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                    </button>
+                    <button class="menu-btn text-btn" id="ansToggleBtn" aria-label="Insert last answer" title="Insert last computed answer (ANS)">
+                        <span class="ans-label">ANS</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Horizontal Swipeable Mobile Branch Chips -->
+            <nav class="mobile-branch-bar" id="mobileBranchBar" aria-label="Calculator Modes">
+                <div class="mobile-branch-scroll" id="mobileBranchScroll">
+                    <button class="branch-chip active" data-branch="universal">Universal</button>
+                    <button class="branch-chip" data-branch="arithmetic">Arithmetic &amp; Bitwise</button>
+                    <button class="branch-chip" data-branch="combinatorics">Combinatorics</button>
+                    <button class="branch-chip" data-branch="logic">Logic &amp; Boolean</button>
+                    <button class="branch-chip" data-branch="settheory">Set Theory</button>
+                    <button class="branch-chip" data-branch="numbertheory">Number Theory</button>
+                    <button class="branch-chip" data-branch="conversion">Base Conversion</button>
+                    <button class="branch-chip" data-branch="matrix">Matrix (2×2)</button>
+                    <button class="branch-chip" data-branch="complex">Complex Numbers</button>
+                </div>
+            </nav>
+
+            <!-- Main Workspace Layout -->
+            <main class="main-workspace" id="mainWorkspace">
+                <!-- Calculator Interactive View -->
+                <section id="calculatorView" class="calculator-view" aria-label="Calculator Interactive Area">
+                    <div class="display-area" id="displayArea">
+                        <div class="expression-input-card">
+                            <label for="exprInput" class="sr-only">Mathematical Expression Input</label>
+                            <input type="text" id="exprInput" placeholder="Enter expression or select function…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="none">
+                            <button class="input-clear-mini" id="inputClearMiniBtn" title="Clear expression" aria-label="Clear expression">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="result-box-container">
+                            <div class="result-box" id="resultBox" title="Result (Tap to copy or view steps)" tabindex="0" role="region" aria-live="polite">
+                                <span class="result-label" aria-hidden="true">=</span>
+                                <span id="resultDisplay" class="result-value">0</span>
+                            </div>
+                            <button class="steps-chip-btn" id="stepsChipBtn" title="View step-by-step working">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                                <span>STEPS</span>
+                            </button>
+                        </div>
+                        <div id="fallbackMessage" class="fallback-message" style="display: none;"></div>
+                    </div>
+
+                    <!-- Buttons Panel -->
+                    <div class="buttons-panel" id="buttonsPanel">
+                        <div id="dynamicButtons" class="button-grid" role="group" aria-label="Calculator keypad"></div>
+                        <div class="action-buttons" id="actionButtonsRow">
+                            <button id="clearBtn" class="action-btn danger-btn" title="Clear All (C)" aria-label="Clear all">
+                                <span>C</span>
+                            </button>
+                            <button id="leftBtn" class="action-btn nav-btn" aria-label="Move cursor left" title="Move cursor left">
+                                <svg class="svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <button id="rightBtn" class="action-btn nav-btn" aria-label="Move cursor right" title="Move cursor right">
+                                <svg class="svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                            <button id="backBtn" class="action-btn nav-btn" aria-label="Backspace" title="Backspace">
+                                <svg class="svg-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                                    <line x1="18" y1="9" x2="12" y2="15"></line>
+                                    <line x1="12" y1="9" x2="18" y2="15"></line>
+                                </svg>
+                            </button>
+                            <button id="equalBtn" class="action-btn eval-btn" aria-label="Evaluate Expression" title="Calculate and show full steps (=)">
+                                <svg class="svg-icon eval-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <line x1="5" y1="9" x2="19" y2="9"></line>
+                                    <line x1="5" y1="15" x2="19" y2="15"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- App Footer -->
+                    <footer class="app-footer" id="appFooter">
+                        <span class="footer-text">Universal CS Calculator <span class="footer-sep">·</span> HDDev 2026</span>
+                    </footer>
+                </section>
+            </main>
+
+            <!-- Full Page Modal / Dedicated View (Help, Privacy, History, Themes, Font, About) -->
+            <div id="fullPageView" class="full-page-view" style="display: none;">
+                <div class="full-page-header">
+                    <button id="closeFullPageBtn" class="back-btn">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        <span>BACK</span>
+                    </button>
+                    <div id="fullPageTitle" class="full-page-title"></div>
+                    <div style="width: 70px;"></div>
+                </div>
+                <div id="fullPageContent" class="full-page-content"></div>
+            </div>
+
+            <!-- Step by Step Native Mobile Sheet / Modal -->
+            <div id="stepsView" class="steps-view" style="display: none;">
+                <div class="steps-header">
+                    <button id="backToCalculatorBtn" class="back-btn">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        <span>CALCULATOR</span>
+                    </button>
+                    <div class="steps-title">STEP-BY-STEP WORKING</div>
+                    <button id="copyStepsBtn" class="copy-steps-header-btn" title="Copy steps">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="steps-scrollable-body">
+                    <div class="steps-expression" id="stepsExpression"></div>
+                    <div class="steps-result-full" id="stepsResultFull"></div>
+                    <div class="steps-list-full" id="stepsListFull"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Home Indicator (at bottom of frame) -->
+        <div class="phone-home-indicator" aria-hidden="true">
+            <span class="home-bar"></span>
+        </div>
+    </div>
+</div>
+
+<!-- Drawer Navigation Menu -->
+<div id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-header">
+        <div class="drawer-brand">
+            <div class="drawer-marvel-mini">HDDev</div>
+            <span>CS CALCULATOR</span>
+        </div>
+        <button class="close-drawer" id="closeDrawerBtn" aria-label="Close menu">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <span>CLOSE</span>
+        </button>
+    </div>
+
+    <div class="drawer-body">
+        <div class="drawer-section">
+            <div class="drawer-section-title">CALCULATOR BRANCHES</div>
+            <div id="branchSelector" class="branch-selector">
+                <button class="branch-drawer-btn" data-branch="universal">
+                    <svg class="branch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><line x1="8" y1="12" x2="16" y2="12"></line><line x1="12" y1="8" x2="12" y2="16"></line></svg>
+                    <span>Universal (Scientific)</span>
+                </button>
+                <button class="branch-drawer-btn" data-branch="arithmetic">
+                    <svg class="branch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line><line x1="12" y1="5" x2="12" y2="19"></line><circle cx="6" cy="6" r="1"></circle><circle cx="18" cy="18" r="1"></circle></svg>
+                    <span>Arithmetic &amp; Bitwise</span>
+                </button>
+                <button class="branch-drawer-btn" data-branch="combinatorics">
+                    <svg class="branch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"></circle><path d="M3 12h3m12 0h3M12 3v3m0 12v3"></path></svg>
+                    <span>Combinatorics (nCr, nPr, !)</span>
+                </button>
+                <button class="branch-drawer-btn" data-branch="logic">
+                    <svg class="branch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3v18l12-9-12-9z"></path></svg>
+                    <span>Logic &amp; Boolean</span>
+                </button>
+                <button class="branch-drawer-btn" data-branch="settheory">
+                    <svg class="branch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="12" r="6"></circle><circle cx="15" cy="12" r="6"></circle></svg>
+                    <span>Set Theory (∪, ∩, \, ⊆)</span>
+                </button>
+                <button class="branch-drawer-btn" data-branch="numbertheory">
+                    <svg class="branch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                    <span>Number Theory (GCD, LCM, Mod, Prime)</span>
+                </button>
+                <button class="branch-drawer-btn" data-branch="conversion">
+                    <svg class="branch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                    <span>Number Base Conversion</span>
+                </button>
+                <button class="branch-drawer-btn" data-branch="matrix">
+                    <svg class="branch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line><line x1="3" y1="12" x2="21" y2="12"></line></svg>
+                    <span>Matrix Algebra (2×2, Det, Mul)</span>
+                </button>
+                <button class="branch-drawer-btn" data-branch="complex">
+                    <svg class="branch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><line x1="12" y1="3" x2="12" y2="21"></line><line x1="3" y1="12" x2="21" y2="12"></line></svg>
+                    <span>Complex Numbers (a + bi)</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="drawer-section">
+            <div class="drawer-section-title">PREFERENCES &amp; TOOLS</div>
+            <button id="drawerReplayIntroBtn" class="drawer-action-btn highlight-action">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span>REPLAY INTRO ANIMATION</span>
+            </button>
+            <button id="drawerHelpBtn" class="drawer-action-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                <span>HELP / HOW TO USE</span>
+            </button>
+            <button id="drawerThemesBtn" class="drawer-action-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a10 10 0 0 0 0 20v-20z"></path></svg>
+                <span>THEMES (12 PALETTES)</span>
+            </button>
+            <button id="drawerFontBtn" class="drawer-action-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+                <span>TYPOGRAPHY FONT</span>
+            </button>
+            <button id="drawerHistoryBtn" class="drawer-action-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>CALCULATION HISTORY</span>
+            </button>
+            <button id="drawerPrivacyBtn" class="drawer-action-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>PRIVACY &amp; POLICY</span>
+            </button>
+            <button id="drawerAboutBtn" class="drawer-action-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>ABOUT CALCULATOR</span>
+            </button>
+            <button id="drawerClearCacheBtn" class="drawer-action-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <span>CLEAR CACHE</span>
+            </button>
+            <button id="drawerExitBtn" class="drawer-action-btn danger-action">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                <span>RESET SESSION</span>
+            </button>
+        </div>
+    </div>
+</div>
+<div id="overlay" class="overlay" aria-hidden="true"></div>
+
+<!-- Update Modal -->
+<div id="updateModal" class="update-modal" style="display: none;">
+    <div class="update-modal-overlay"></div>
+    <div class="update-modal-content">
+        <div class="update-modal-header">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            <div class="update-modal-title">UPDATE AVAILABLE</div>
+        </div>
+        <div class="update-modal-message" id="updateMessage">A new version of Universal CS Calculator is ready.</div>
+        <div class="update-modal-buttons">
+            <button id="updateNotNowBtn" class="action-btn">NOT NOW</button>
+            <button id="updateNowBtn" class="action-btn eval-btn">UPDATE NOW</button>
+        </div>
+    </div>
+</div>
+
+<!-- PWA Welcome Modal -->
+<div id="pwaWelcomeModal" class="update-modal" style="display: none;">
+    <div class="update-modal-overlay"></div>
+    <div class="update-modal-content">
+        <div class="update-modal-header">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <rect x="5" y="2" width="14" height="20" rx="3"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>
+            <div class="update-modal-title">NATIVE MOBILE CS CALCULATOR</div>
+        </div>
+        <div class="update-modal-message" id="pwaWelcomeMessage">
+            <p>Welcome to the <strong>Universal CS Calculator</strong> native mobile app.</p>
+            <p style="margin-top: 10px;">This app runs <strong>completely offline</strong> with zero internet connection required. All mathematical evaluations, proofs, and step-by-step algorithms run locally on your device.</p>
+            <p style="margin-top: 10px;">Created with passion by <strong>HDDev</strong> · Powered by GitHub.</p>
+        </div>
+        <div class="update-modal-buttons">
+            <button id="pwaAgreeBtn" class="action-btn eval-btn">GET STARTED</button>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Toast -->
+<div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('sw.js')
+        .then(function(reg) {
+          console.log('Universal CS Calculator service worker ready');
+          setInterval(function() { reg.update(); }, 60 * 60 * 1000);
+        })
+        .catch(function(err) { 
+          console.error('Service Worker registration failed:', err); 
+        });
+    });
+  }
+</script>
+<script src="script.js"></script>
+</body>
+</html>
