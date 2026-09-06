@@ -1466,6 +1466,9 @@ function showHelpPage() {
 
 function showPrivacyPage() {
     var privacyHtml = '<div class="about-text">' +
+        '<div style="text-align:center; margin-bottom:16px;">' +
+        '<img src="app-icon.png" alt="App Logo" width="64" height="64" style="border-radius:14px; box-shadow:0 0 16px rgba(124,58,237,0.5);">' +
+        '</div>' +
         '<h2>PRIVACY POLICY</h2>' +
         '<p class="muted-small">Last updated: May 2026</p>' +
         '<h3>1. Introduction</h3>' +
@@ -1495,6 +1498,9 @@ function showPrivacyPage() {
 
 function showAboutPage() {
     var aboutHtml = '<div class="about-text">' +
+        '<div style="text-align:center; margin-bottom:16px;">' +
+        '<img src="app-icon.png" alt="App Logo" width="72" height="72" style="border-radius:16px; box-shadow:0 0 20px rgba(124,58,237,0.6);">' +
+        '</div>' +
         '<h2>ABOUT</h2>' +
         '<p><strong>Developed by Hanz Dalmino</strong></p>' +
         '<p>A Bachelor of Science in Information Technology student from Cebu Technological University - Main Campus</p>' +
