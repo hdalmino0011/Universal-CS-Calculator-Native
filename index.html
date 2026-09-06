@@ -205,18 +205,32 @@
                         <div class="tracer-card-header">
                             <div class="editor-header-title">
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                                <span>SOURCE CODE (ANY PROGRAMMING LANGUAGE)</span>
+                                <span>SOURCE CODE (VS CODE DARK+ THEME)</span>
                             </div>
-                            <span class="tracer-mode-pill" id="tracerEngineStatusPill">AI &amp; DSA TRACER</span>
+                            <div class="tracer-header-controls">
+                                <div class="tracer-view-toggle" id="tracerViewToggle" role="tablist">
+                                    <button type="button" id="tracerTabEdit" class="tracer-toggle-btn active" role="tab" aria-selected="true" title="Edit code directly with line-wrap">
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                        <span>EDIT</span>
+                                    </button>
+                                    <button type="button" id="tracerTabSyntax" class="tracer-toggle-btn" role="tab" aria-selected="false" title="View colorized VS Code Dark+ syntax">
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                                        <span>VS CODE COLORS</span>
+                                    </button>
+                                </div>
+                                <button type="button" id="tracerWrapToggleBtn" class="tracer-wrap-pill active" title="Toggle Soft Word Wrap">
+                                    <span id="tracerWrapLabel">WRAP: ON</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="tracer-editor-box">
+                        <div class="tracer-editor-box" id="tracerEditorBox">
                             <div class="line-gutter" id="tracerLineGutter">1</div>
-                            <div class="tracer-code-editor-container">
-                                <pre id="tracerCodeHighlight" class="code-highlight-layer" aria-hidden="true"><code id="tracerCodeHighlightCode"></code></pre>
+                            <div class="tracer-code-editor-container" id="tracerEditorContainer">
                                 <textarea id="tracerCodeInput" class="code-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="// Enter or paste lines of code in ANY programming language here...
 // Works with Python, C++, Java, JavaScript, Rust, Go, C, C#, and more!
 // Then tap 'TRACE &amp; EXECUTE' to visualize step-by-step iterations, variables, and DSA!"></textarea>
+                                <div id="tracerCodeSyntaxDisplay" class="code-syntax-display" style="display: none;" title="Tap anywhere to edit code"></div>
                             </div>
                         </div>
 

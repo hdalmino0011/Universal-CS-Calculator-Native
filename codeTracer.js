@@ -76,9 +76,13 @@
 
     // DOM References
     var codeInput = document.getElementById('tracerCodeInput');
-    var codeHighlightLayer = document.getElementById('tracerCodeHighlight');
-    var codeHighlightCode = document.getElementById('tracerCodeHighlightCode');
+    var codeSyntaxDisplay = document.getElementById('tracerCodeSyntaxDisplay');
     var lineGutter = document.getElementById('tracerLineGutter');
+    var tracerEditorBox = document.getElementById('tracerEditorBox');
+    var tracerTabEdit = document.getElementById('tracerTabEdit');
+    var tracerTabSyntax = document.getElementById('tracerTabSyntax');
+    var tracerWrapToggleBtn = document.getElementById('tracerWrapToggleBtn');
+    var tracerWrapLabel = document.getElementById('tracerWrapLabel');
     var langSelect = document.getElementById('tracerLangSelect');
     var presetsSelect = document.getElementById('tracerPresetsSelect');
     var customInputEl = document.getElementById('tracerCustomInput');
@@ -123,12 +127,15 @@
     var analysisTotalSteps = document.getElementById('analysisTotalSteps');
     var analysisComplexityNotes = document.getElementById('analysisComplexityNotes');
 
-    // Universal Syntax Tokenizer & Highlighter
+    var currentEditorMode = 'edit';
+    var isWordWrapEnabled = true;
+
+    // Universal VS Code Dark+ Syntax Tokenizer & Highlighter
     function highlightCodeSyntax(rawCode, lang) {
         if (!rawCode) return '';
 
-        // Token regex capturing comments, strings, numbers, keywords, types, booleans/null, function names, operators, punctuation
-        var tokenRegex = /(\/\*[\s\S]*?\*\/)|(\/\/.*|#(?!include).*)|("(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|`(?:\\[\s\S]|[^`\\])*`)|(\b0x[0-9a-fA-F]+\b|\b0b[01]+\b|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)|(\b(?:for|while|do|if|else|elif|return|yield|break|continue|switch|case|default|def|func|fn|function|class|struct|enum|interface|type|typedef|let|var|const|val|mut|auto|public|private|protected|static|final|abstract|virtual|override|import|include|package|namespace|using|from|as|new|this|self|super|try|catch|finally|throw|except|raise|with|lambda|match|async|await)\b)|(\b(?:int|float|double|char|bool|boolean|void|string|String|vector|List|ArrayList|Map|HashMap|Set|HashSet|Array|Object|i8|i16|i32|i64|u8|u16|u32|u64|usize|isize|f32|f64|size_t|long|short|byte)\b)|(\b(?:true|false|True|False|null|None|nil|undefined|nullptr|NaN|Infinity)\b)|(\b[a-zA-Z_]\w*(?=\s*\())|((?:==|!=|<=|>=|&&|\|\||<<|>>|\+\+|\-\-|\+=|\-=|\*=|/=|%=|->|=>|::|[+\-*/%&|^~!=<>?:;]))|([()[\]{}])/g;
+        // Token regex capturing comments, strings, numbers, control flow, keywords, types, constants, functions, operators, punctuation
+        var tokenRegex = /(\/\*[\s\S]*?\*\/)|(\/\/.*|#(?!include).*)|("(?:\\[\s\S]|[^"\\])*"|'(?:\\[\s\S]|[^'\\])*'|`(?:\\[\s\S]|[^`\\])*`)|(\b0x[0-9a-fA-F]+\b|\b0b[01]+\b|\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)|(\b(?:for|while|do|if|else|elif|return|yield|break|continue|switch|case|default|try|catch|finally|throw|except|raise|with|in|and|or|not|is)\b)|(\b(?:def|func|fn|function|class|struct|enum|interface|type|typedef|let|var|const|val|mut|auto|public|private|protected|static|final|abstract|virtual|override|import|include|package|namespace|using|from|as|new|this|self|super|lambda|match|async|await)\b)|(\b(?:int|float|double|char|bool|boolean|void|string|String|vector|List|ArrayList|Map|HashMap|Set|HashSet|Array|Object|i8|i16|i32|i64|u8|u16|u32|u64|usize|isize|f32|f64|size_t|long|short|byte)\b)|(\b(?:true|false|True|False|null|None|nil|undefined|nullptr|NaN|Infinity)\b)|(\b[a-zA-Z_]\w*(?=\s*\())|((?:==|!=|<=|>=|&&|\|\||<<|>>|\+\+|\-\-|\+=|\-=|\*=|/=|%=|->|=>|::|[+\-*/%&|^~!=<>?:;]))|([()[\]{}])/g;
 
         var result = '';
         var lastIndex = 0;
@@ -140,31 +147,34 @@
             }
 
             if (match[1] || match[2]) {
-                // Comments
+                // Comments (VS Code #6a9955)
                 result += '<span class="tok-comment">' + escapeHtml(match[0]) + '</span>';
             } else if (match[3]) {
-                // Strings
+                // Strings (VS Code #ce9178)
                 result += '<span class="tok-str">' + escapeHtml(match[0]) + '</span>';
             } else if (match[4]) {
-                // Numbers
+                // Numbers (VS Code #b5cea8)
                 result += '<span class="tok-num">' + escapeHtml(match[0]) + '</span>';
             } else if (match[5]) {
-                // Keywords
-                result += '<span class="tok-kw">' + escapeHtml(match[0]) + '</span>';
+                // Control flow keywords (VS Code #c586c0)
+                result += '<span class="tok-control">' + escapeHtml(match[0]) + '</span>';
             } else if (match[6]) {
-                // Types
-                result += '<span class="tok-type">' + escapeHtml(match[0]) + '</span>';
+                // Declarative keywords (VS Code #569cd6)
+                result += '<span class="tok-kw">' + escapeHtml(match[0]) + '</span>';
             } else if (match[7]) {
-                // Constants / Booleans
-                result += '<span class="tok-const">' + escapeHtml(match[0]) + '</span>';
+                // Types (VS Code #4ec9b0)
+                result += '<span class="tok-type">' + escapeHtml(match[0]) + '</span>';
             } else if (match[8]) {
-                // Functions
-                result += '<span class="tok-fn">' + escapeHtml(match[0]) + '</span>';
+                // Constants / Booleans (VS Code #569cd6)
+                result += '<span class="tok-const">' + escapeHtml(match[0]) + '</span>';
             } else if (match[9]) {
-                // Operators
-                result += '<span class="tok-op">' + escapeHtml(match[0]) + '</span>';
+                // Functions (VS Code #dcdcaa)
+                result += '<span class="tok-fn">' + escapeHtml(match[0]) + '</span>';
             } else if (match[10]) {
-                // Punctuation
+                // Operators (VS Code #d4d4d4)
+                result += '<span class="tok-op">' + escapeHtml(match[0]) + '</span>';
+            } else if (match[11]) {
+                // Punctuation / Brackets (VS Code #ffd700)
                 result += '<span class="tok-punc">' + escapeHtml(match[0]) + '</span>';
             }
 
@@ -186,7 +196,7 @@
         var count = Math.max(1, lines.length);
         var gutterHtml = '';
         for (var i = 1; i <= count; i++) {
-            gutterHtml += i + '<br>';
+            gutterHtml += '<div class="gutter-line-num">' + i + '</div>';
         }
         lineGutter.innerHTML = gutterHtml;
     }
@@ -196,21 +206,101 @@
         if (lineGutter) {
             lineGutter.scrollTop = codeInput.scrollTop;
         }
-        if (codeHighlightLayer) {
-            codeHighlightLayer.scrollTop = codeInput.scrollTop;
-            codeHighlightLayer.scrollLeft = codeInput.scrollLeft;
+    }
+
+    // Render Full Syntax View
+    function renderSyntaxDisplay() {
+        if (!codeSyntaxDisplay) codeSyntaxDisplay = document.getElementById('tracerCodeSyntaxDisplay');
+        if (!codeInput || !codeSyntaxDisplay) return;
+        var text = codeInput.value;
+        if (!text.trim()) {
+            codeSyntaxDisplay.innerHTML = '<div class="syntax-view-line"><span class="syntax-view-num">1</span><span class="syntax-view-code tok-comment">// Enter or paste code, or select an algorithm preset above... (Tap to edit)</span></div>';
+            return;
+        }
+        var lang = langSelect ? langSelect.value : 'auto';
+        var lines = text.split('\n');
+        var html = '';
+        for (var i = 0; i < lines.length; i++) {
+            var lineNum = i + 1;
+            var lineText = lines[i];
+            var highlighted = highlightCodeSyntax(lineText, lang) || '&nbsp;';
+            html += '<div class="syntax-view-line">' +
+                '<span class="syntax-view-num">' + lineNum + '</span>' +
+                '<span class="syntax-view-code">' + highlighted + '</span>' +
+            '</div>';
+        }
+        codeSyntaxDisplay.innerHTML = html;
+    }
+
+    // Switch between Direct Edit & VS Code Colors View
+    function setEditorMode(mode) {
+        currentEditorMode = mode;
+        if (!tracerTabEdit) tracerTabEdit = document.getElementById('tracerTabEdit');
+        if (!tracerTabSyntax) tracerTabSyntax = document.getElementById('tracerTabSyntax');
+        if (!codeSyntaxDisplay) codeSyntaxDisplay = document.getElementById('tracerCodeSyntaxDisplay');
+        if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
+        if (!lineGutter) lineGutter = document.getElementById('tracerLineGutter');
+
+        if (mode === 'syntax') {
+            if (tracerTabEdit) {
+                tracerTabEdit.classList.remove('active');
+                tracerTabEdit.setAttribute('aria-selected', 'false');
+            }
+            if (tracerTabSyntax) {
+                tracerTabSyntax.classList.add('active');
+                tracerTabSyntax.setAttribute('aria-selected', 'true');
+            }
+            renderSyntaxDisplay();
+            if (codeInput) codeInput.style.display = 'none';
+            if (lineGutter) lineGutter.style.display = 'none'; // syntax view has built-in gutter
+            if (codeSyntaxDisplay) {
+                codeSyntaxDisplay.style.display = 'block';
+                if (codeInput) codeSyntaxDisplay.scrollTop = codeInput.scrollTop;
+            }
+        } else {
+            if (tracerTabSyntax) {
+                tracerTabSyntax.classList.remove('active');
+                tracerTabSyntax.setAttribute('aria-selected', 'false');
+            }
+            if (tracerTabEdit) {
+                tracerTabEdit.classList.add('active');
+                tracerTabEdit.setAttribute('aria-selected', 'true');
+            }
+            if (codeSyntaxDisplay) codeSyntaxDisplay.style.display = 'none';
+            if (lineGutter) lineGutter.style.display = 'block';
+            if (codeInput) {
+                codeInput.style.display = 'block';
+                codeInput.focus();
+            }
+            updateGutter();
+            syncScroll();
         }
     }
 
-    // Refresh Syntax Highlight Overlay in Editor
-    function updateSyntaxHighlight() {
-        if (!codeInput) return;
-        var text = codeInput.value;
-        if (codeHighlightCode) {
-            var lang = langSelect ? langSelect.value : 'auto';
-            // Trailing newline ensures scroll heights match textarea accurately
-            codeHighlightCode.innerHTML = highlightCodeSyntax(text, lang) + (text.endsWith('\n') ? ' ' : '');
+    // Toggle Soft Word Wrap
+    function toggleWordWrap() {
+        isWordWrapEnabled = !isWordWrapEnabled;
+        if (!tracerEditorBox) tracerEditorBox = document.getElementById('tracerEditorBox');
+        if (!tracerWrapToggleBtn) tracerWrapToggleBtn = document.getElementById('tracerWrapToggleBtn');
+        if (!tracerWrapLabel) tracerWrapLabel = document.getElementById('tracerWrapLabel');
+
+        if (tracerEditorBox) {
+            if (isWordWrapEnabled) {
+                tracerEditorBox.classList.remove('tracer-nowrap');
+            } else {
+                tracerEditorBox.classList.add('tracer-nowrap');
+            }
         }
+        if (tracerWrapToggleBtn) {
+            tracerWrapToggleBtn.classList.toggle('active', isWordWrapEnabled);
+        }
+        if (tracerWrapLabel) {
+            tracerWrapLabel.textContent = 'WRAP: ' + (isWordWrapEnabled ? 'ON' : 'OFF');
+        }
+    }
+
+    // Refresh when code changes
+    function onCodeInputChanged() {
         updateGutter();
         syncScroll();
     }
@@ -222,7 +312,10 @@
         if (codeInput) codeInput.value = preset.code;
         if (langSelect) langSelect.value = preset.lang;
         if (customInputEl) customInputEl.value = preset.customInput || '';
-        updateSyntaxHighlight();
+        updateGutter();
+        renderSyntaxDisplay();
+        // Activate VS Code colors display so user immediately sees colorized syntax
+        setEditorMode('syntax');
         if (window.showToast) window.showToast('Loaded preset: ' + preset.title);
     }
 
@@ -1255,19 +1348,53 @@
 
     // Initialize Event Listeners
     function init() {
+        if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
+        if (!codeSyntaxDisplay) codeSyntaxDisplay = document.getElementById('tracerCodeSyntaxDisplay');
+        if (!tracerTabEdit) tracerTabEdit = document.getElementById('tracerTabEdit');
+        if (!tracerTabSyntax) tracerTabSyntax = document.getElementById('tracerTabSyntax');
+        if (!tracerWrapToggleBtn) tracerWrapToggleBtn = document.getElementById('tracerWrapToggleBtn');
+        if (!tracerWrapLabel) tracerWrapLabel = document.getElementById('tracerWrapLabel');
+        if (!lineGutter) lineGutter = document.getElementById('tracerLineGutter');
+
         if (codeInput) {
-            codeInput.addEventListener('input', updateSyntaxHighlight);
-            codeInput.addEventListener('keyup', updateSyntaxHighlight);
+            codeInput.addEventListener('input', onCodeInputChanged);
+            codeInput.addEventListener('keyup', onCodeInputChanged);
             codeInput.addEventListener('paste', function() {
-                setTimeout(updateSyntaxHighlight, 10);
+                setTimeout(onCodeInputChanged, 10);
             });
             codeInput.addEventListener('scroll', syncScroll);
-            updateSyntaxHighlight();
+            onCodeInputChanged();
+        }
+
+        if (codeSyntaxDisplay) {
+            codeSyntaxDisplay.addEventListener('click', function() {
+                setEditorMode('edit');
+            });
+        }
+
+        if (tracerTabEdit) {
+            tracerTabEdit.addEventListener('click', function() {
+                setEditorMode('edit');
+            });
+        }
+
+        if (tracerTabSyntax) {
+            tracerTabSyntax.addEventListener('click', function() {
+                setEditorMode('syntax');
+            });
+        }
+
+        if (tracerWrapToggleBtn) {
+            tracerWrapToggleBtn.addEventListener('click', function() {
+                toggleWordWrap();
+            });
         }
 
         if (langSelect) {
             langSelect.addEventListener('change', function() {
-                updateSyntaxHighlight();
+                if (currentEditorMode === 'syntax') {
+                    renderSyntaxDisplay();
+                }
             });
         }
 
@@ -1291,7 +1418,9 @@
             clearBtn.addEventListener('click', function() {
                 if (codeInput) codeInput.value = '';
                 if (customInputEl) customInputEl.value = '';
-                updateSyntaxHighlight();
+                updateGutter();
+                renderSyntaxDisplay();
+                setEditorMode('edit');
                 if (resultsContainer) resultsContainer.style.display = 'none';
                 stopPlay();
                 if (window.showToast) window.showToast('Code editor cleared.');
