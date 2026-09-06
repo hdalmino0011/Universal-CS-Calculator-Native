@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cs-calc-v4-mobile';
+const CACHE_NAME = 'cs-calc-v5-mobile';
 const ASSETS = [
   './',
   'index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   'script.js',
   'manifest.json',
   'privacy.html',
+  'app-icon.png',
   'icon-192.png',
   'icon-512.png'
 ];

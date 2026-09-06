@@ -282,50 +282,44 @@ body {
     100% { left: 190%; }
 }
 
-/* Marvel Subtitle: CS CALCULATOR */
-.marvel-subtitle-container {
-    display: flex;
+/* Splash Screen: POWERED BY GITHUB */
+.splash-github-container {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    margin-top: 18px;
+    gap: 8px;
+    margin-top: 20px;
     opacity: 0;
-    transform: translateY(14px);
-    animation: subtitleSlideUp 0.65s cubic-bezier(0.2, 0.9, 0.3, 1) 0.95s forwards;
+    transform: translateY(12px);
+    animation: githubSlideUp 0.65s cubic-bezier(0.2, 0.9, 0.3, 1) 0.95s forwards;
+    color: #f1f5f9;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
 }
 
-@keyframes subtitleSlideUp {
+.splash-github-icon {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    opacity: 0.9;
+}
+
+@keyframes githubSlideUp {
     0% {
         opacity: 0;
-        transform: translateY(14px);
-        letter-spacing: 1px;
+        transform: translateY(12px);
+        letter-spacing: 1.5px;
     }
     100% {
-        opacity: 1;
+        opacity: 0.95;
         transform: translateY(0);
         letter-spacing: 3.5px;
     }
-}
-
-.marvel-sub-line {
-    width: 28px;
-    height: 1.5px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6));
-}
-
-.marvel-sub-line.right {
-    transform: rotate(180deg);
-}
-
-.marvel-sub-text {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 0.74rem;
-    font-weight: 800;
-    letter-spacing: 3.5px;
-    text-transform: uppercase;
-    color: #f1f5f9;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-    white-space: nowrap;
 }
 
 /* ================= CLEAN RESPONSIVE APP CONTAINER ================= */
@@ -688,6 +682,13 @@ body {
 .calc-btn.operator-btn {
     color: var(--accent-2);
     font-weight: 600;
+}
+
+.calc-btn.compact-label {
+    font-size: 0.72rem;
+    letter-spacing: -0.3px;
+    padding: 9px 1px;
+    white-space: nowrap;
 }
 
 .calc-btn.equals-btn {

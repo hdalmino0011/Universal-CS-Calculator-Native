@@ -543,13 +543,12 @@ var conversionButtons = [
 ];
 
 var matrixButtons = [
-    'det2x2(', 'inv2x2(',
-    'add2x2(', 'mul2x2(',
-    'trace2x2(', 'trans2x2(',
+    'det2x2(', 'inv2x2(', 'trans2x2(', 'trace2x2(',
+    'add2x2(', 'mul2x2(', '(', ')',
     '7', '8', '9', ',',
-    '4', '5', '6', '(',
-    '1', '2', '3', ')',
-    '0', '-'
+    '4', '5', '6', '-',
+    '1', '2', '3', '.',
+    '0', '[', ']', '+'
 ];
 
 var complexButtons = [
@@ -591,6 +590,8 @@ function renderButtons() {
         if (isNumberButton(label)) btn.className = 'calc-btn number-btn';
         else if (isEqualsButton(label)) btn.className = 'calc-btn equals-btn';
         else btn.className = 'calc-btn operator-btn';
+
+        if (label.length > 5) btn.classList.add('compact-label');
 
         btn.textContent = label;
         btn.type = 'button';
@@ -708,10 +709,10 @@ function generateSteps(expr) {
     steps.push('<strong>Input Expression:</strong> ' + expr);
 
     var clean = preprocessExpression(expr);
-    if (clean !== expr) steps.push('Substitute standard notation: ' + clean);
+    if (clean !== expr) steps.push('Standardized notation: ' + clean);
 
     // Check for bitwise operations
-    var bitwiseMatch = clean.match(/(-?\d+)\s*(&|\||\^|<<|>>)\s*(-?\d+)/);
+    var bitwiseMatch = clean.match(/(-?\d+)\s*(&|\||<<|>>)\s*(-?\d+)/);
     if (bitwiseMatch) {
         var op1 = parseInt(bitwiseMatch[1], 10);
         var op = bitwiseMatch[2];
@@ -719,7 +720,6 @@ function generateSteps(expr) {
         var bRes;
         if (op === '&') bRes = op1 & op2;
         else if (op === '|') bRes = op1 | op2;
-        else if (op === '^') bRes = op1 ^ op2;
         else if (op === '<<') bRes = op1 << op2;
         else if (op === '>>') bRes = op1 >> op2;
 
@@ -730,42 +730,130 @@ function generateSteps(expr) {
 
         steps.push('Operand 1 (Binary): <code>' + bin1 + '</code> (' + op1 + ')');
         steps.push('Operand 2 (Binary): <code>' + bin2 + '</code> (' + op2 + ')');
-        if (op === '&') steps.push('Bitwise AND: Each bit position is 1 if and only if both bits are 1.');
+        if (op === '&') steps.push('Bitwise AND: Each bit position is 1 if both bits are 1.');
         else if (op === '|') steps.push('Bitwise OR: Each bit position is 1 if at least one bit is 1.');
-        else if (op === '^') steps.push('Bitwise XOR: Each bit position is 1 if exactly one bit is 1.');
         else if (op === '<<') steps.push('Left Shift: Shift bits left by ' + op2 + ' positions (multiplies by 2<sup>' + op2 + '</sup>).');
         else if (op === '>>') steps.push('Right Shift: Shift bits right by ' + op2 + ' positions (integer division by 2<sup>' + op2 + '</sup>).');
 
         steps.push('Result (Binary): <code>' + binRes + '</code> = <strong>' + bRes + '</strong> (Decimal)');
+        return steps.join('\n');
     }
 
-    var processed = compileToJS(expr);
-    var working = processed;
-    var guard = 0;
-    var callRegex = /([A-Za-z_][A-Za-z0-9_.]*)?\(([^()]*)\)/;
+    var working = expr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').trim();
 
-    while (callRegex.test(working) && guard < 40) {
+    // 1. Factorials: e.g. 5! or fact(5)
+    var factRegex = /(\d+)!/;
+    var guard = 0;
+    while (factRegex.test(working) && guard < 10) {
         guard++;
-        var m = callRegex.exec(working);
-        var fnName = m[1] || '';
-        var inner = m[2];
-        var exprToRun = fnName + '(' + (inner === '' ? '0' : inner) + ')';
-        var value;
+        working = working.replace(factRegex, function(_, nStr) {
+            var n = parseInt(nStr, 10);
+            if (n > 20) return 'Infinity';
+            var f = 1;
+            var seq = [];
+            for (var i = n; i >= 1; i--) { f *= i; seq.push(i); }
+            var expansion = seq.length ? seq.join(' × ') : '1';
+            steps.push('Factorial (' + n + '!): ' + expansion + ' = <strong>' + f + '</strong>');
+            return f;
+        });
+    }
+
+    // 2. Square roots: e.g. sqrt(144) or √(144)
+    var sqrtRegex = /(?:sqrt|√)\s*\(?\s*(\d+(?:\.\d+)?)\s*\)?/;
+    guard = 0;
+    while (sqrtRegex.test(working) && guard < 10) {
+        guard++;
+        working = working.replace(sqrtRegex, function(_, num) {
+            var n = parseFloat(num);
+            var res = Math.sqrt(n);
+            if (!Number.isInteger(res)) res = parseFloat(res.toFixed(6));
+            steps.push('Square Root: √(' + num + ') = <strong>' + res + '</strong>');
+            return res;
+        });
+    }
+
+    // 3. Parentheses resolution (innermost groups)
+    guard = 0;
+    var parenRegex = /\(([^()]+)\)/;
+    while (parenRegex.test(working) && guard < 15) {
+        guard++;
+        var pm = parenRegex.exec(working);
+        var subExpr = pm[1];
+        var subVal;
         try {
-            value = runCompiled(exprToRun);
-        } catch (e) {
+            var subClean = subExpr.replace(/\^/g, '**');
+            subVal = Function('return (' + subClean + ')')();
+            if (typeof subVal === 'number' && !Number.isInteger(subVal)) subVal = parseFloat(subVal.toFixed(6));
+            steps.push('Order of Operations (Parentheses): (' + subExpr + ') = <strong>' + subVal + '</strong>');
+            working = working.slice(0, pm.index) + subVal + working.slice(pm.index + pm[0].length);
+        } catch(e) {
             break;
         }
-        var displayBefore = fnName ? (fnName + '(' + inner + ')') : ('(' + inner + ')');
-        working = working.slice(0, m.index) + value + working.slice(m.index + m[0].length);
-        steps.push('Evaluate sub-expression: ' + displayBefore + ' = ' + value + ' → ' + working);
     }
 
+    // 4. Powers / Exponents (^ or **)
+    guard = 0;
+    var powRegex = /(-?\d+(?:\.\d+)?)\s*(?:\^|\*\*)\s*(-?\d+(?:\.\d+)?)/;
+    while (powRegex.test(working) && guard < 15) {
+        guard++;
+        working = working.replace(powRegex, function(_, a, b) {
+            var base = parseFloat(a), exp = parseFloat(b);
+            var val = Math.pow(base, exp);
+            if (typeof val === 'number' && !Number.isInteger(val)) val = parseFloat(val.toFixed(6));
+            steps.push('Exponentiation: ' + a + '<sup>' + b + '</sup> = <strong>' + val + '</strong>');
+            return val;
+        });
+    }
+
+    // 5. Multiplications, Divisions, Modulos (*, /, %)
+    guard = 0;
+    var mulDivModRegex = /(-?\d+(?:\.\d+)?)\s*([*\/%])\s*(-?\d+(?:\.\d+)?)/;
+    while (mulDivModRegex.test(working) && guard < 20) {
+        guard++;
+        var matched = false;
+        working = working.replace(mulDivModRegex, function(_, a, op, b) {
+            matched = true;
+            var numA = parseFloat(a), numB = parseFloat(b), val;
+            var sym = op === '*' ? '×' : (op === '/' ? '÷' : '%');
+            var name = op === '*' ? 'Multiply' : (op === '/' ? 'Divide' : 'Modulo');
+            if (op === '*') val = numA * numB;
+            else if (op === '/') val = numB === 0 ? 'Infinity' : (numA / numB);
+            else val = numA % numB;
+            if (typeof val === 'number' && !Number.isInteger(val)) val = parseFloat(val.toFixed(6));
+            steps.push(name + ': ' + a + ' ' + sym + ' ' + b + ' = <strong>' + val + '</strong>');
+            return val;
+        });
+        if (!matched) break;
+    }
+
+    // 6. Additions and Subtractions (+, -)
+    guard = 0;
+    var addSubRegex = /(-?\d+(?:\.\d+)?)\s*([+\-])\s*(\d+(?:\.\d+)?)/;
+    while (addSubRegex.test(working) && guard < 20) {
+        guard++;
+        var matched2 = false;
+        working = working.replace(addSubRegex, function(match, a, op, b, offset) {
+            if (offset === 0 && op === '-' && a === '') return match;
+            matched2 = true;
+            var numA = parseFloat(a), numB = parseFloat(b), val;
+            var name = op === '+' ? 'Add' : 'Subtract';
+            if (op === '+') val = numA + numB;
+            else val = numA - numB;
+            if (typeof val === 'number' && !Number.isInteger(val)) val = parseFloat(val.toFixed(6));
+            steps.push(name + ': ' + a + ' ' + op + ' ' + b + ' = <strong>' + val + '</strong>');
+            return val;
+        });
+        if (!matched2) break;
+    }
+
+    // Fallback compilation if anything unreduced remains
+    var processed = compileToJS(expr);
     try {
-        var result = runCompiled(processed);
-        steps.push('<strong>Final Evaluated Result:</strong> ' + result);
+        var finalVal = runCompiled(processed);
+        if (typeof finalVal === 'number' && !Number.isInteger(finalVal)) finalVal = parseFloat(finalVal.toFixed(6));
+        steps.push('<strong>Final Evaluated Result:</strong> ' + finalVal);
     } catch (e) {
-        steps.push('Error during evaluation: ' + e.message);
+        steps.push('<strong>Final Evaluated Result:</strong> ' + working);
     }
 
     return steps.join('\n');
@@ -1187,13 +1275,16 @@ function evaluateConversion(expr) {
 
 // ================= MATRIX ALGEBRA (2x2) =================
 function evaluateMatrix(expr) {
-    var u = expr.toLowerCase();
+    var raw = expr.trim();
+    // Allow bracketed notation e.g. det2x2([1, 2], [3, 4]) or det2x2(1, 2, 3, 4)
+    var u = raw.toLowerCase().replace(/[\[\]]/g, ' ');
 
     // det2x2(a, b, c, d)
     var m = u.match(/det2x2\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
     if (m) {
         var a = +m[1], b = +m[2], c = +m[3], d = +m[4];
         var ad = a * d, bc = b * c, det = ad - bc;
+        if (typeof det === 'number' && !Number.isInteger(det)) det = parseFloat(det.toFixed(6));
         var steps = [
             '<strong>2×2 Matrix Determinant:</strong>',
             'Matrix A = [ [' + a + ', ' + b + '], [' + c + ', ' + d + '] ]',
@@ -1211,20 +1302,54 @@ function evaluateMatrix(expr) {
     if (m) {
         var a2 = +m[1], b2 = +m[2], c2 = +m[3], d2 = +m[4];
         var det2 = a2 * d2 - b2 * c2;
-        if (det2 === 0) return { result: 'Error', steps: 'Determinant is 0. Inverse does not exist.' };
+        if (det2 === 0) return { result: 'Error', steps: 'Determinant is 0. Inverse does not exist (Matrix is singular).' };
         var invA = (d2 / det2).toFixed(3), invB = (-b2 / det2).toFixed(3);
         var invC = (-c2 / det2).toFixed(3), invD = (a2 / det2).toFixed(3);
         var stepsInv = [
-            '<strong>2×2 Matrix Inverse Formula:</strong> A<sup>-1</sup> = (1 / det(A)) × [ [d, -b], [-c, a] ]',
-            'det(A) = (' + a2 + '×' + d2 + ') − (' + b2 + '×' + c2 + ') = ' + det2,
-            'Adjugate Matrix = [ [' + d2 + ', ' + (-b2) + '], [' + (-c2) + ', ' + a2 + '] ]',
-            'A<sup>-1</sup> = [ [' + invA + ', ' + invB + '], [' + invC + ', ' + invD + '] ]'
+            '<strong>2×2 Matrix Inverse:</strong>',
+            'Matrix A = [ [' + a2 + ', ' + b2 + '], [' + c2 + ', ' + d2 + '] ]',
+            'Formula: A<sup>-1</sup> = (1 / det(A)) × [ [d, -b], [-c, a] ]',
+            'Step 1 (Determinant): det(A) = (' + a2 + ' × ' + d2 + ') − (' + b2 + ' × ' + c2 + ') = ' + det2,
+            'Step 2 (Adjugate Matrix): adj(A) = [ [' + d2 + ', ' + (-b2) + '], [' + (-c2) + ', ' + a2 + '] ]',
+            'Step 3 (Multiply by 1/det):',
+            'A<sup>-1</sup> = <strong>[ [' + invA + ', ' + invB + '], [' + invC + ', ' + invD + '] ]</strong>'
         ];
         return { result: '[[' + invA + ', ' + invB + '], [' + invC + ', ' + invD + ']]', steps: stepsInv.join('\n') };
     }
 
+    // trans2x2(a, b, c, d) - Transpose
+    m = u.match(/trans2x2\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+    if (m) {
+        var ta = +m[1], tb = +m[2], tc = +m[3], td = +m[4];
+        var stepsTrans = [
+            '<strong>2×2 Matrix Transpose:</strong>',
+            'Matrix A = [ [' + ta + ', ' + tb + '], [' + tc + ', ' + td + '] ]',
+            'Formula: Transpose Aᵀ swaps rows and columns ((Aᵀ)ᵢⱼ = Aⱼᵢ)',
+            'Row 1 [' + ta + ', ' + tb + '] becomes Column 1',
+            'Row 2 [' + tc + ', ' + td + '] becomes Column 2',
+            'Result: Aᵀ = <strong>[ [' + ta + ', ' + tc + '], [' + tb + ', ' + td + '] ]</strong>'
+        ];
+        return { result: '[[' + ta + ', ' + tc + '], [' + tb + ', ' + td + ']]', steps: stepsTrans.join('\n') };
+    }
+
+    // trace2x2(a, b, c, d) - Trace
+    m = u.match(/trace2x2\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+    if (m) {
+        var tra = +m[1], trb = +m[2], trc = +m[3], trd = +m[4];
+        var trVal = tra + trd;
+        if (typeof trVal === 'number' && !Number.isInteger(trVal)) trVal = parseFloat(trVal.toFixed(6));
+        var stepsTrace = [
+            '<strong>2×2 Matrix Trace:</strong>',
+            'Matrix A = [ [' + tra + ', ' + trb + '], [' + trc + ', ' + trd + '] ]',
+            'Formula: tr(A) = a₁₁ + a₂₂ (Sum of main diagonal entries)',
+            'Step 1 (Main Diagonal Elements): ' + tra + ' and ' + trd,
+            'Step 2: tr(A) = ' + tra + ' + ' + trd + ' = <strong>' + trVal + '</strong>'
+        ];
+        return { result: trVal, steps: stepsTrace.join('\n') };
+    }
+
     // add2x2
-    m = u.match(/add2x2\s*\(?\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)/);
+    m = u.match(/add2x2\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
     if (m) {
         var vals = m.slice(1, 9).map(Number);
         var r11 = vals[0] + vals[4], r12 = vals[1] + vals[5], r21 = vals[2] + vals[6], r22 = vals[3] + vals[7];
@@ -1242,7 +1367,7 @@ function evaluateMatrix(expr) {
     }
 
     // mul2x2
-    m = u.match(/mul2x2\s*\(?\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)/);
+    m = u.match(/mul2x2\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
     if (m) {
         var v = m.slice(1, 9).map(Number);
         var r1c1 = v[0] * v[4] + v[1] * v[6];
@@ -1262,7 +1387,7 @@ function evaluateMatrix(expr) {
         return { result: '[[' + r1c1 + ', ' + r1c2 + '], [' + r2c1 + ', ' + r2c2 + ']]', steps: steps3.join('\n') };
     }
 
-    return { result: 'Error', steps: 'Supported Matrix operations: det2x2(a,b,c,d), inv2x2(a,b,c,d), add2x2(a,b,c,d,e,f,g,h), mul2x2(a,b,c,d,e,f,g,h)' };
+    return { result: 'Error', steps: 'Supported Matrix operations: det2x2(a,b,c,d), inv2x2(a,b,c,d), trans2x2(a,b,c,d), trace2x2(a,b,c,d), add2x2(a..h), mul2x2(a..h)' };
 }
 
 // ================= COMPLEX NUMBERS =================
@@ -1355,7 +1480,7 @@ function evaluate() {
 
     addHistory(raw, resStr, res.steps, currentBranch);
     buzz(15);
-    showStepsView(raw, resStr, res.steps || 'No detailed steps available for this expression.');
+    showStepsView(raw, resStr, res.steps || 'No detailed steps available for this expression.', true);
 }
 
 // ================= UI ACTIONS =================
