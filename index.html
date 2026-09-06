@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Universal CS Calculator & Code Tracer | Multi-Language DSA Tracing Engine</title>
+    <title>Universal CS Calculator</title>
     <meta name="description" content="Native Universal Computer Science and Scientific Calculator with full offline capabilities, step-by-step mathematical proofs across 9 CS disciplines, and universal multi-language code & DSA execution tracer.">
-    <meta property="og:title" content="Universal CS Calculator & Code Tracer">
+    <meta property="og:title" content="Universal CS Calculator">
     <meta property="og:description" content="Native Universal Computer Science and Scientific Calculator with full offline capabilities, step-by-step mathematical proofs across 9 CS disciplines, and universal multi-language code & DSA execution tracer.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -212,9 +212,12 @@
 
                         <div class="tracer-editor-box">
                             <div class="line-gutter" id="tracerLineGutter">1</div>
-                            <textarea id="tracerCodeInput" class="code-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="// Enter or paste lines of code in ANY programming language here...
+                            <div class="tracer-code-editor-container">
+                                <pre id="tracerCodeHighlight" class="code-highlight-layer" aria-hidden="true"><code id="tracerCodeHighlightCode"></code></pre>
+                                <textarea id="tracerCodeInput" class="code-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="// Enter or paste lines of code in ANY programming language here...
 // Works with Python, C++, Java, JavaScript, Rust, Go, C, C#, and more!
 // Then tap 'TRACE &amp; EXECUTE' to visualize step-by-step iterations, variables, and DSA!"></textarea>
+                            </div>
                         </div>
 
                         <!-- Optional Test Arguments / Stdin input -->
@@ -585,22 +588,21 @@
     </div>
 </div>
 
-<!-- PWA Welcome Modal -->
+<!-- Native Mobile App Welcome Modal -->
 <div id="pwaWelcomeModal" class="update-modal" style="display: none;">
     <div class="update-modal-overlay"></div>
     <div class="update-modal-content">
         <div class="update-modal-header">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                <path d="M2 17l10 5 10-5"></path>
-                <path d="M2 12l10 5 10-5"></path>
+                <rect x="5" y="2" width="14" height="20" rx="3" ry="3"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
             </svg>
-            <div class="update-modal-title">OFFLINE-READY PWA</div>
+            <div class="update-modal-title">NATIVE APP FOR MOBILE DEVICES</div>
         </div>
         <div class="update-modal-message" id="pwaWelcomeMessage">
-            <p>Welcome to the <strong>Universal CS Calculator</strong>.</p>
-            <p style="margin-top: 10px;">This application is fully cached and runs <strong>completely offline</strong> on both mobile phones and PC. Detailed mathematical derivations and step-by-step working are computed instantly on-device.</p>
-            <p style="margin-top: 10px;">You can hard reset anytime via the <strong>RESET SESSION</strong> option in the menu.</p>
+            <p style="text-align: center;">Welcome to the <strong>Universal CS Calculator</strong>.</p>
+            <p style="margin-top: 10px; text-align: center;">This application is a <strong>Native App created for mobile devices</strong>, running completely <strong>offline</strong> with high-performance instant computation. Detailed mathematical derivations, algorithmic step-by-step execution, and memory tracing are processed instantly on-device.</p>
+            <p style="margin-top: 10px; text-align: center;">You can hard reset anytime via the <strong>RESET SESSION</strong> option in the menu.</p>
         </div>
         <div class="update-modal-buttons">
             <button id="pwaAgreeBtn" class="action-btn eval-btn">GET STARTED</button>

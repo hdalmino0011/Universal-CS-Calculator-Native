@@ -85,12 +85,13 @@ You MUST output ONLY a valid JSON object adhering strictly to this JSON format (
 }
 
 Rules:
-1. Max steps: Include up to 35-45 representative steps if loop runs many iterations, capturing start, critical loop iterations, updates, and completion. If loop has <= 30 iterations, include EVERY step.
-2. Ensure "lineNumber" corresponds directly to the 1-based line number in the user's provided code.
-3. If an array/list/vector exists in the variables, populate "arrayPointers" with the elements and relevant pointer indices (e.g., low, high, mid, i, j, curr, pivot) so it can be visually animated!
-4. Track variables meticulously: set "changed": true only when the variable was created or updated in this step.
-5. If the code has syntax errors or infinite loops, explain them gracefully in the explanation and output without crashing.
-6. Provide clear, pedagogical explanations suited for DSA interview prep and code tracing.`;
+1. CRITICAL: Trace EVERY loop, iteration, and output step explicitly! For example, in a loop over i = 0 to 4, unroll and trace every iteration with clear labels like 'Iteration 1 (i = 0)', 'Iteration 2 (i = 1)', 'Iteration 3 (i = 2)', etc. Never skip loop iterations.
+2. In each step, clearly state the current state (e.g. "i = 1: Evaluating condition i < 5 (1 < 5 is true). Output updated to '0 1'.").
+3. In "stdout", show the cumulative console output emitted up to the current step (e.g., "0", "0 1", "0 1 2"), so the terminal view updates in real time on every step.
+4. Ensure "lineNumber" corresponds directly to the 1-based line number in the user's provided code.
+5. If an array/list/vector exists, populate "arrayPointers" with elements and pointer indices (e.g. low, high, mid, i, j, curr) to visually highlight them in the array cell visualizer.
+6. Track variables meticulously: set "changed": true only when the variable was created or updated in this step.
+7. Provide clear, highly understandable, step-by-step pedagogical explanations suited for computer science students and programmers.`;
 
     const userPrompt = `Language: ${language}\nCustom Input / Arguments: ${customInput || 'None'}\n\nCode to trace:\n\`\`\`\n${code}\n\`\`\``;
 

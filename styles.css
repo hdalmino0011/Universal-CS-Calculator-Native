@@ -176,14 +176,14 @@ body {
     pointer-events: none;
     opacity: 0;
     z-index: 1;
-    animation: flipbookReel 0.68s steps(12, end) forwards;
+    animation: flipbookReel 1.8s steps(14, end) forwards;
 }
 
 .flip-text-reel {
     display: flex;
     flex-direction: column;
     align-items: center;
-    animation: textFlicker 0.68s linear forwards;
+    animation: textFlicker 1.8s linear forwards;
 }
 
 .flip-tag {
@@ -213,7 +213,7 @@ body {
     z-index: 2;
     transform: scale(0.6);
     opacity: 0;
-    animation: marvelImpactSnap 0.75s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.35s forwards;
+    animation: marvelImpactSnap 1.3s cubic-bezier(0.16, 1, 0.3, 1) 1.5s forwards;
     filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 25px rgba(237, 29, 36, 0.55));
 }
 
@@ -274,7 +274,7 @@ body {
     transform: skewX(-24deg);
     z-index: 3;
     pointer-events: none;
-    animation: sheenSweep 1.15s cubic-bezier(0.4, 0, 0.2, 1) 0.85s forwards;
+    animation: sheenSweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) 2.6s forwards;
 }
 
 @keyframes sheenSweep {
@@ -291,7 +291,7 @@ body {
     margin-top: 20px;
     opacity: 0;
     transform: translateY(12px);
-    animation: githubSlideUp 0.65s cubic-bezier(0.2, 0.9, 0.3, 1) 0.95s forwards;
+    animation: githubSlideUp 1.0s cubic-bezier(0.2, 0.9, 0.3, 1) 3.0s forwards;
     color: #f1f5f9;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 0.72rem;
@@ -1395,6 +1395,8 @@ body {
 .update-modal-header {
     display: flex;
     align-items: center;
+    justify-content: center;
+    text-align: center;
     gap: 10px;
     margin-bottom: 14px;
     color: var(--accent);
@@ -1404,6 +1406,7 @@ body {
     font-size: 1rem;
     font-weight: 800;
     letter-spacing: 1px;
+    text-align: center;
 }
 
 .update-modal-message {
@@ -1819,6 +1822,7 @@ button:focus-visible, input:focus-visible {
     height: 220px;
     background: var(--bg-display);
     position: relative;
+    overflow: hidden;
 }
 
 .line-gutter {
@@ -1833,27 +1837,119 @@ button:focus-visible, input:focus-visible {
     text-align: right;
     user-select: none;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
-.code-textarea {
+.tracer-code-editor-container {
+    position: relative;
     flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text-primary);
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.code-highlight-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 10px 12px;
+    box-sizing: border-box;
     font-family: var(--font-mono);
     font-size: 0.84rem;
     line-height: 1.55;
-    padding: 10px 12px;
-    resize: none;
     tab-size: 4;
     white-space: pre;
+    word-break: normal;
+    word-wrap: normal;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+    color: var(--text-primary);
+    border: none;
+    background: transparent;
+}
+
+.code-highlight-layer code {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    tab-size: inherit;
+}
+
+.code-textarea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+    line-height: 1.55;
+    tab-size: 4;
+    white-space: pre;
+    word-break: normal;
+    word-wrap: normal;
     overflow: auto;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    z-index: 2;
+    color: transparent;
+    caret-color: #38bdf8;
 }
 
 .code-textarea::placeholder {
     color: var(--text-muted);
     font-style: italic;
+}
+
+.code-textarea::selection {
+    background: rgba(56, 189, 248, 0.4);
+    color: transparent;
+}
+
+/* ================= SYNTAX HIGHLIGHTING TOKENS ================= */
+.tok-kw {
+    color: #f43f5e;
+    font-weight: 600;
+}
+.tok-type {
+    color: #38bdf8;
+    font-weight: 600;
+}
+.tok-num {
+    color: #fbbf24;
+}
+.tok-str {
+    color: #34d399;
+}
+.tok-comment {
+    color: #94a3b8;
+    font-style: italic;
+}
+.tok-op {
+    color: #c084fc;
+}
+.tok-fn {
+    color: #60a5fa;
+    font-weight: 500;
+}
+.tok-const {
+    color: #f97316;
+    font-weight: 600;
+}
+.tok-ident {
+    color: #f8fafc;
+}
+.tok-punc {
+    color: #94a3b8;
 }
 
 .tracer-args-bar {

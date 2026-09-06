@@ -2208,10 +2208,11 @@ function initSplashScreen() {
         }, 520);
     }
 
-    // Displays iconic HDDev Marvel intro and stays for 3.5 seconds then smoothly fades out
+    // Displays iconic HDDev Marvel intro with slower, cinematic pacing and smoothly fades out
+    splash.addEventListener('click', dismiss);
     setTimeout(function() {
         dismiss();
-    }, 3500);
+    }, 5600);
 }
 
 // ================= INITIALIZATION =================
