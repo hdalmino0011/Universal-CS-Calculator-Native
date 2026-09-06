@@ -1,9 +1,10 @@
-const CACHE_NAME = 'cs-calc-v5-mobile';
+const CACHE_NAME = 'cs-calc-v7-drawer-modes';
 const ASSETS = [
   './',
   'index.html',
   'styles.css',
   'script.js',
+  'codeTracer.js',
   'manifest.json',
   'privacy.html',
   'app-icon.png',

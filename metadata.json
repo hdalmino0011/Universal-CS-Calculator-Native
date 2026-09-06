@@ -1,6 +1,6 @@
 {
   "name": "Universal CS Calculator",
-  "description": "Native Universal Computer Science and Scientific Calculator for mobile phones with full offline capabilities, step-by-step mathematical proofs across 9 CS disciplines, and iconic Marvel-style animated intro.",
+  "description": "Native Universal Computer Science and Scientific Calculator with full offline capabilities, step-by-step mathematical proofs across 9 CS disciplines, and universal multi-language code & DSA execution tracer.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

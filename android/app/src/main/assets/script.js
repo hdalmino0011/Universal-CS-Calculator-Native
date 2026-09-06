@@ -709,33 +709,72 @@ function generateSteps(expr) {
     steps.push('<strong>Input Expression:</strong> ' + expr);
 
     var clean = preprocessExpression(expr);
-    if (clean !== expr) steps.push('Standardized notation: ' + clean);
+    if (clean !== expr) steps.push('Standardized Notation: <code>' + clean + '</code>');
 
-    // Check for bitwise operations
-    var bitwiseMatch = clean.match(/(-?\d+)\s*(&|\||<<|>>)\s*(-?\d+)/);
-    if (bitwiseMatch) {
+    // Bitwise NOT: ~n or NOT n
+    var notMatch = clean.match(/^(?:~|NOT\s+)(-?\d+)$/i);
+    if (notMatch) {
+        var nVal = parseInt(notMatch[1], 10);
+        var notRes = ~nVal;
+        steps.push('<strong>Bitwise NOT Analysis (~' + nVal + '):</strong>');
+        var binOrig = (nVal >>> 0).toString(2).padStart(8, '0').slice(-8);
+        var binNot = (notRes >>> 0).toString(2).padStart(8, '0').slice(-8);
+        steps.push('Step 1 (Binary Representation): ' + nVal + ' = <code>' + binOrig + '</code> (8-bit)');
+        steps.push('Step 2 (Bit Inversion 0 ↔ 1): Invert each bit of <code>' + binOrig + '</code> → <code>' + binNot + '</code>');
+        steps.push('Step 3 (Two’s Complement Arithmetic): ~n = -(n + 1) = -(' + nVal + ' + 1) = <strong>' + notRes + '</strong>');
+        return steps.join('\n');
+    }
+
+    // Bitwise Binary: a & b, a | b, a ^ b, a XOR b, a << b, a >> b
+    var bitwiseMatch = clean.match(/(-?\d+)\s*(&|\||\^|XOR|<<|>>)\s*(-?\d+)/i);
+    if (bitwiseMatch && !clean.includes('+') && !clean.includes('*') && !clean.includes('/')) {
         var op1 = parseInt(bitwiseMatch[1], 10);
-        var op = bitwiseMatch[2];
+        var op = bitwiseMatch[2].toUpperCase();
         var op2 = parseInt(bitwiseMatch[3], 10);
         var bRes;
-        if (op === '&') bRes = op1 & op2;
-        else if (op === '|') bRes = op1 | op2;
-        else if (op === '<<') bRes = op1 << op2;
-        else if (op === '>>') bRes = op1 >> op2;
+        var opName = '';
+        if (op === '&') { bRes = op1 & op2; opName = 'Bitwise AND (&)'; }
+        else if (op === '|') { bRes = op1 | op2; opName = 'Bitwise OR (|)'; }
+        else if (op === '^' || op === 'XOR') { bRes = op1 ^ op2; opName = 'Bitwise XOR (⊕)'; }
+        else if (op === '<<') { bRes = op1 << op2; opName = 'Bitwise Left Shift (<<)'; }
+        else if (op === '>>') { bRes = op1 >> op2; opName = 'Bitwise Right Shift (>>)'; }
 
-        steps.push('<strong>Bitwise Operation Analysis (' + op1 + ' ' + op + ' ' + op2 + '):</strong>');
-        var bin1 = (op1 >>> 0).toString(2).padStart(8, '0');
-        var bin2 = (op2 >>> 0).toString(2).padStart(8, '0');
-        var binRes = (bRes >>> 0).toString(2).padStart(8, '0');
+        steps.push('<strong>' + opName + ' Operation:</strong> ' + op1 + ' ' + op + ' ' + op2);
+        var bin1 = (op1 >>> 0).toString(2).padStart(8, '0').slice(-8);
+        var bin2 = (op2 >>> 0).toString(2).padStart(8, '0').slice(-8);
+        var binRes = (bRes >>> 0).toString(2).padStart(8, '0').slice(-8);
 
-        steps.push('Operand 1 (Binary): <code>' + bin1 + '</code> (' + op1 + ')');
-        steps.push('Operand 2 (Binary): <code>' + bin2 + '</code> (' + op2 + ')');
-        if (op === '&') steps.push('Bitwise AND: Each bit position is 1 if both bits are 1.');
-        else if (op === '|') steps.push('Bitwise OR: Each bit position is 1 if at least one bit is 1.');
-        else if (op === '<<') steps.push('Left Shift: Shift bits left by ' + op2 + ' positions (multiplies by 2<sup>' + op2 + '</sup>).');
-        else if (op === '>>') steps.push('Right Shift: Shift bits right by ' + op2 + ' positions (integer division by 2<sup>' + op2 + '</sup>).');
+        steps.push('Operand 1 (Binary): <code>' + bin1.slice(0, 4) + ' ' + bin1.slice(4) + '</code> (' + op1 + ')');
+        steps.push('Operand 2 (Binary): <code>' + bin2.slice(0, 4) + ' ' + bin2.slice(4) + '</code> (' + op2 + ')');
 
-        steps.push('Result (Binary): <code>' + binRes + '</code> = <strong>' + bRes + '</strong> (Decimal)');
+        if (op === '&') {
+            steps.push('Bitwise AND Rule: Output bit is 1 only when BOTH input bits are 1.');
+            for (var b = 7; b >= 0; b--) {
+                var bitA = (op1 >> b) & 1, bitB = (op2 >> b) & 1, bitR = (bRes >> b) & 1;
+                steps.push('Bit ' + b + ': ' + bitA + ' AND ' + bitB + ' = ' + bitR);
+            }
+        } else if (op === '|') {
+            steps.push('Bitwise OR Rule: Output bit is 1 when AT LEAST ONE input bit is 1.');
+            for (var b2 = 7; b2 >= 0; b2--) {
+                var bitA2 = (op1 >> b2) & 1, bitB2 = (op2 >> b2) & 1, bitR2 = (bRes >> b2) & 1;
+                steps.push('Bit ' + b2 + ': ' + bitA2 + ' OR ' + bitB2 + ' = ' + bitR2);
+            }
+        } else if (op === '^' || op === 'XOR') {
+            steps.push('Bitwise XOR Rule: Output bit is 1 when input bits DIFFER (1 ⊕ 0 = 1, 0 ⊕ 1 = 1; identical bits = 0).');
+            for (var b3 = 7; b3 >= 0; b3--) {
+                var bitA3 = (op1 >> b3) & 1, bitB3 = (op2 >> b3) & 1, bitR3 = (bRes >> b3) & 1;
+                steps.push('Bit ' + b3 + ': ' + bitA3 + ' XOR ' + bitB3 + ' = ' + bitR3);
+            }
+        } else if (op === '<<') {
+            steps.push('Left Shift Rule: Shift bits of ' + op1 + ' left by ' + op2 + ' positions (multiplies by 2<sup>' + op2 + '</sup> = ' + Math.pow(2, op2) + ').');
+            steps.push('Calculation: ' + op1 + ' × ' + Math.pow(2, op2) + ' = <strong>' + bRes + '</strong>');
+        } else if (op === '>>') {
+            steps.push('Right Shift Rule: Shift bits of ' + op1 + ' right by ' + op2 + ' positions (arithmetic floor division by 2<sup>' + op2 + '</sup> = ' + Math.pow(2, op2) + ').');
+            steps.push('Calculation: ⌊' + op1 + ' ÷ ' + Math.pow(2, op2) + '⌋ = <strong>' + bRes + '</strong>');
+        }
+
+        steps.push('Result (Binary): <code>' + binRes.slice(0, 4) + ' ' + binRes.slice(4) + '</code>');
+        steps.push('Result (Decimal): <strong>' + bRes + '</strong>');
         return steps.join('\n');
     }
 
@@ -753,26 +792,76 @@ function generateSteps(expr) {
             var seq = [];
             for (var i = n; i >= 1; i--) { f *= i; seq.push(i); }
             var expansion = seq.length ? seq.join(' × ') : '1';
-            steps.push('Factorial (' + n + '!): ' + expansion + ' = <strong>' + f + '</strong>');
+            steps.push('Order of Operations (Factorial): Calculate ' + n + '! = ' + expansion + ' = <strong>' + f + '</strong>');
             return f;
         });
+        steps.push('→ Expression is now: <code>' + working + '</code>');
     }
 
     // 2. Square roots: e.g. sqrt(144) or √(144)
-    var sqrtRegex = /(?:sqrt|√)\s*\(?\s*(\d+(?:\.\d+)?)\s*\)?/;
+    var sqrtRegex = /(?:sqrt|√)\s*\(?\s*(-?\d+(?:\.\d+)?)\s*\)?/;
     guard = 0;
     while (sqrtRegex.test(working) && guard < 10) {
         guard++;
         working = working.replace(sqrtRegex, function(_, num) {
             var n = parseFloat(num);
             var res = Math.sqrt(n);
-            if (!Number.isInteger(res)) res = parseFloat(res.toFixed(6));
-            steps.push('Square Root: √(' + num + ') = <strong>' + res + '</strong>');
+            if (isNaN(res)) res = 'NaN';
+            else if (!Number.isInteger(res)) res = parseFloat(res.toFixed(6));
+            steps.push('Function (Square Root): √(' + num + ') = <strong>' + res + '</strong>');
             return res;
         });
+        steps.push('→ Expression is now: <code>' + working + '</code>');
     }
 
-    // 3. Parentheses resolution (innermost groups)
+    // 3. Absolute value: abs(x)
+    var absRegex = /abs\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/i;
+    guard = 0;
+    while (absRegex.test(working) && guard < 10) {
+        guard++;
+        working = working.replace(absRegex, function(_, num) {
+            var val = Math.abs(parseFloat(num));
+            steps.push('Function (Absolute Value): |' + num + '| = <strong>' + val + '</strong>');
+            return val;
+        });
+        steps.push('→ Expression is now: <code>' + working + '</code>');
+    }
+
+    // 4. Logarithms: log(x), ln(x)
+    var logRegex = /\b(log|ln)\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/i;
+    guard = 0;
+    while (logRegex.test(working) && guard < 10) {
+        guard++;
+        working = working.replace(logRegex, function(_, fnName, num) {
+            var n = parseFloat(num);
+            var val = fnName.toLowerCase() === 'log' ? Math.log10(n) : Math.log(n);
+            if (!Number.isInteger(val)) val = parseFloat(val.toFixed(6));
+            var label = fnName.toLowerCase() === 'log' ? 'Common Logarithm log₁₀(' + num + ')' : 'Natural Logarithm ln(' + num + ')';
+            steps.push('Function (' + label + ') = <strong>' + val + '</strong>');
+            return val;
+        });
+        steps.push('→ Expression is now: <code>' + working + '</code>');
+    }
+
+    // 5. Trigonometric functions: sin(x), cos(x), tan(x)
+    var trigRegex = /\b(sin|cos|tan)\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/i;
+    guard = 0;
+    while (trigRegex.test(working) && guard < 10) {
+        guard++;
+        working = working.replace(trigRegex, function(_, fnName, num) {
+            var rad = parseFloat(num);
+            var val;
+            if (fnName.toLowerCase() === 'sin') val = Math.sin(rad);
+            else if (fnName.toLowerCase() === 'cos') val = Math.cos(rad);
+            else val = Math.tan(rad);
+            if (!Number.isInteger(val)) val = parseFloat(val.toFixed(6));
+            steps.push('Function (' + fnName.toUpperCase() + ' in radians): ' + fnName + '(' + num + ' rad) = <strong>' + val + '</strong>');
+            return val;
+        });
+        steps.push('→ Expression is now: <code>' + working + '</code>');
+    }
+
+    // 6. Parentheses resolution (PEMDAS - P: innermost groups)
     guard = 0;
     var parenRegex = /\(([^()]+)\)/;
     while (parenRegex.test(working) && guard < 15) {
@@ -784,14 +873,15 @@ function generateSteps(expr) {
             var subClean = subExpr.replace(/\^/g, '**');
             subVal = Function('return (' + subClean + ')')();
             if (typeof subVal === 'number' && !Number.isInteger(subVal)) subVal = parseFloat(subVal.toFixed(6));
-            steps.push('Order of Operations (Parentheses): (' + subExpr + ') = <strong>' + subVal + '</strong>');
+            steps.push('Order of Operations (Parentheses): Evaluate innermost group (' + subExpr + ') = <strong>' + subVal + '</strong>');
             working = working.slice(0, pm.index) + subVal + working.slice(pm.index + pm[0].length);
+            steps.push('→ Expression is now: <code>' + working + '</code>');
         } catch(e) {
             break;
         }
     }
 
-    // 4. Powers / Exponents (^ or **)
+    // 7. Powers / Exponents (PEMDAS - E: ^ or **)
     guard = 0;
     var powRegex = /(-?\d+(?:\.\d+)?)\s*(?:\^|\*\*)\s*(-?\d+(?:\.\d+)?)/;
     while (powRegex.test(working) && guard < 15) {
@@ -800,12 +890,13 @@ function generateSteps(expr) {
             var base = parseFloat(a), exp = parseFloat(b);
             var val = Math.pow(base, exp);
             if (typeof val === 'number' && !Number.isInteger(val)) val = parseFloat(val.toFixed(6));
-            steps.push('Exponentiation: ' + a + '<sup>' + b + '</sup> = <strong>' + val + '</strong>');
+            steps.push('Order of Operations (Exponents): ' + a + '<sup>' + b + '</sup> = <strong>' + val + '</strong>');
             return val;
         });
+        steps.push('→ Expression is now: <code>' + working + '</code>');
     }
 
-    // 5. Multiplications, Divisions, Modulos (*, /, %)
+    // 8. Multiplications, Divisions, Modulos (PEMDAS - MD, evaluated strictly left to right)
     guard = 0;
     var mulDivModRegex = /(-?\d+(?:\.\d+)?)\s*([*\/%])\s*(-?\d+(?:\.\d+)?)/;
     while (mulDivModRegex.test(working) && guard < 20) {
@@ -815,18 +906,18 @@ function generateSteps(expr) {
             matched = true;
             var numA = parseFloat(a), numB = parseFloat(b), val;
             var sym = op === '*' ? '×' : (op === '/' ? '÷' : '%');
-            var name = op === '*' ? 'Multiply' : (op === '/' ? 'Divide' : 'Modulo');
             if (op === '*') val = numA * numB;
             else if (op === '/') val = numB === 0 ? 'Infinity' : (numA / numB);
             else val = numA % numB;
             if (typeof val === 'number' && !Number.isInteger(val)) val = parseFloat(val.toFixed(6));
-            steps.push(name + ': ' + a + ' ' + sym + ' ' + b + ' = <strong>' + val + '</strong>');
+            steps.push('Order of Operations (Multiply/Divide left-to-right): ' + a + ' ' + sym + ' ' + b + ' = <strong>' + val + '</strong>');
             return val;
         });
         if (!matched) break;
+        steps.push('→ Expression is now: <code>' + working + '</code>');
     }
 
-    // 6. Additions and Subtractions (+, -)
+    // 9. Additions and Subtractions (PEMDAS - AS, evaluated strictly left to right)
     guard = 0;
     var addSubRegex = /(-?\d+(?:\.\d+)?)\s*([+\-])\s*(\d+(?:\.\d+)?)/;
     while (addSubRegex.test(working) && guard < 20) {
@@ -836,17 +927,36 @@ function generateSteps(expr) {
             if (offset === 0 && op === '-' && a === '') return match;
             matched2 = true;
             var numA = parseFloat(a), numB = parseFloat(b), val;
-            var name = op === '+' ? 'Add' : 'Subtract';
             if (op === '+') val = numA + numB;
             else val = numA - numB;
             if (typeof val === 'number' && !Number.isInteger(val)) val = parseFloat(val.toFixed(6));
-            steps.push(name + ': ' + a + ' ' + op + ' ' + b + ' = <strong>' + val + '</strong>');
+            steps.push('Order of Operations (Add/Subtract left-to-right): ' + a + ' ' + op + ' ' + b + ' = <strong>' + val + '</strong>');
             return val;
         });
         if (!matched2) break;
+        steps.push('→ Expression is now: <code>' + working + '</code>');
     }
 
-    // Fallback compilation if anything unreduced remains
+    // 10. Comparisons: ==, !=, ≠, <, >, <=, ≤, >=, ≥
+    var compRegex = /(-?\d+(?:\.\d+)?)\s*(===?|!==?|≠|<=|≤|>=|≥|<|>)\s*(-?\d+(?:\.\d+)?)/;
+    var compMatch = working.match(compRegex);
+    if (compMatch) {
+        var ca = parseFloat(compMatch[1]), cop = compMatch[2], cb = parseFloat(compMatch[3]);
+        var cRes;
+        var cOpLabel = cop;
+        if (cop === '==' || cop === '===') { cRes = ca === cb; cOpLabel = '== (Equal to)'; }
+        else if (cop === '!=' || cop === '!==' || cop === '≠') { cRes = ca !== cb; cOpLabel = '≠ (Not equal to)'; }
+        else if (cop === '<') { cRes = ca < cb; cOpLabel = '< (Less than)'; }
+        else if (cop === '>') { cRes = ca > cb; cOpLabel = '> (Greater than)'; }
+        else if (cop === '<=' || cop === '≤') { cRes = ca <= cb; cOpLabel = '≤ (Less than or equal to)'; }
+        else if (cop === '>=' || cop === '≥') { cRes = ca >= cb; cOpLabel = '≥ (Greater than or equal to)'; }
+
+        steps.push('Comparison Evaluation: ' + ca + ' ' + cOpLabel + ' ' + cb);
+        steps.push('Condition Truth Value: <strong>' + (cRes ? 'TRUE (1)' : 'FALSE (0)') + '</strong>');
+        return steps.join('\n');
+    }
+
+    // Fallback compilation
     var processed = compileToJS(expr);
     try {
         var finalVal = runCompiled(processed);
@@ -881,40 +991,119 @@ function evaluateLogic(expr) {
     if (!raw) return { result: 'Error', steps: 'Empty logical expression.' };
 
     steps.push('<strong>Evaluating Propositional Logic:</strong> ' + raw);
-    var clean = preprocessExpression(raw);
-    var processed = compileToJS(raw);
+    var clean = raw.replace(/∧/g, ' AND ').replace(/∨/g, ' OR ').replace(/¬/g, ' NOT ')
+                   .replace(/⊕/g, ' XOR ').replace(/→/g, ' IMPLIES ').replace(/↔/g, ' EQUIV ');
 
-    var result;
-    try {
-        result = runCompiled(processed);
-        steps.push('Evaluates to Boolean: <strong>' + (result ? 'TRUE (1)' : 'FALSE (0)') + '</strong>');
-
-        // Provide truth logic explanation
-        if (/AND|&&|∧/.test(raw)) {
-            steps.push('<strong>AND (Conjunction ∧):</strong> True only when both operands evaluate to TRUE.');
-            steps.push('Truth values: T ∧ T = T, T ∧ F = F, F ∧ T = F, F ∧ F = F');
-        }
-        if (/OR|\|\||∨/.test(raw)) {
-            steps.push('<strong>OR (Disjunction ∨):</strong> True when at least one operand evaluates to TRUE.');
-            steps.push('Truth values: T ∨ T = T, T ∨ F = T, F ∨ T = T, F ∨ F = F');
-        }
-        if (/NOT|¬|!/.test(raw)) {
-            steps.push('<strong>NOT (Negation ¬):</strong> Flips truth value (¬T = F, ¬F = T).');
-        }
-        if (/XOR|⊕/.test(raw)) {
-            steps.push('<strong>XOR (Exclusive OR ⊕):</strong> True if and only if operands have different truth values (T ⊕ F = T, T ⊕ T = F).');
-        }
-        if (/IMPLIES|→/.test(raw)) {
-            steps.push('<strong>IMPLIES (Conditional →):</strong> False only when hypothesis is TRUE and conclusion is FALSE (T → F = F; all others T).');
-        }
-        if (/EQUIV|↔/.test(raw)) {
-            steps.push('<strong>EQUIV (Biconditional ↔):</strong> True when both propositions have identical truth values (T ↔ T = T, F ↔ F = T).');
-        }
-
-        return { result: result ? 'TRUE' : 'FALSE', steps: steps.join('\n') };
-    } catch (e) {
-        return { result: 'Error', steps: 'Invalid Boolean expression: ' + e.message };
+    // Check for propositional variables (p, q, r, A, B)
+    var vars = [];
+    var tokens = clean.match(/\b[a-zA-Z]\b/g);
+    if (tokens) {
+        tokens.forEach(function(t) {
+            var upper = t.toUpperCase();
+            if (['AND', 'OR', 'NOT', 'XOR', 'IMPLIES', 'EQUIV', 'T', 'F'].indexOf(upper) === -1) {
+                if (vars.indexOf(upper) === -1) vars.push(upper);
+            }
+        });
     }
+
+    if (vars.length > 0 && vars.length <= 4) {
+        steps.push('Propositional Variables Identified: [' + vars.join(', ') + ']');
+        steps.push('Constructing Truth Table (2<sup>' + vars.length + '</sup> = ' + Math.pow(2, vars.length) + ' rows):');
+        var n = vars.length;
+        var totalRows = 1 << n;
+        var trueCount = 0;
+        for (var i = 0; i < totalRows; i++) {
+            var assign = {};
+            var assignParts = [];
+            for (var j = 0; j < n; j++) {
+                var val = Boolean(i & (1 << (n - 1 - j)));
+                assign[vars[j]] = val;
+                assignParts.push(vars[j] + ' = ' + (val ? 'T' : 'F'));
+            }
+            var rowCode = clean;
+            for (var vIdx = 0; vIdx < vars.length; vIdx++) {
+                var vName = vars[vIdx];
+                rowCode = rowCode.replace(new RegExp('\\b' + vName + '\\b', 'gi'), assign[vName] ? 'true' : 'false');
+            }
+            rowCode = rowCode.replace(/\bAND\b/gi, '&&').replace(/\bOR\b/gi, '||').replace(/\bNOT\b/gi, '!')
+                             .replace(/\bXOR\b/gi, ' !== ')
+                             .replace(/(.+?)\s*IMPLIES\s*(.+)/, '(!($1) || ($2))')
+                             .replace(/(.+?)\s*EQUIV\s*(.+)/, '($1 === $2)');
+            var rowRes = false;
+            try { rowRes = Boolean(Function('return (' + rowCode + ')')()); } catch(e) {}
+            if (rowRes) trueCount++;
+            steps.push('Row ' + (i + 1) + ': [' + assignParts.join(', ') + '] → Statement evaluates to <strong>' + (rowRes ? 'T' : 'F') + '</strong>');
+        }
+
+        var classification = '';
+        if (trueCount === totalRows) classification = 'TAUTOLOGY (Always TRUE for all assignments)';
+        else if (trueCount === 0) classification = 'CONTRADICTION (Always FALSE for all assignments)';
+        else classification = 'CONTINGENCY (True for ' + trueCount + '/' + totalRows + ' assignments)';
+        steps.push('Logical Classification: <strong>' + classification + '</strong>');
+        return { result: classification.split(' ')[0], steps: steps.join('\n') };
+    }
+
+    // Step-by-step reduction of constant boolean expressions
+    var working = clean;
+    var guard = 0;
+
+    var parenRe = /\(([^()]+)\)/;
+    while (parenRe.test(working) && guard < 10) {
+        guard++;
+        var pm = parenRe.exec(working);
+        var subExpr = pm[1];
+        var subRes = evalSimpleBool(subExpr);
+        steps.push('Evaluate innermost group (' + subExpr + '): <strong>' + subRes.val + '</strong> (' + subRes.rule + ')');
+        working = working.slice(0, pm.index) + subRes.val + working.slice(pm.index + pm[0].length);
+        steps.push('→ Statement is now: <code>' + working + '</code>');
+    }
+
+    var finalStep = evalSimpleBool(working);
+    steps.push('Final Evaluation: <strong>' + finalStep.val + '</strong> (' + finalStep.rule + ')');
+    return { result: finalStep.val, steps: steps.join('\n') };
+}
+
+function evalSimpleBool(str) {
+    var cur = str.trim();
+    var notRe = /\bNOT\s+(TRUE|FALSE)\b/i;
+    while (notRe.test(cur)) {
+        cur = cur.replace(notRe, function(_, v) {
+            return v.toUpperCase() === 'TRUE' ? 'FALSE' : 'TRUE';
+        });
+    }
+    var andRe = /\b(TRUE|FALSE)\s+AND\s+(TRUE|FALSE)\b/i;
+    while (andRe.test(cur)) {
+        cur = cur.replace(andRe, function(_, a, b) {
+            return (a.toUpperCase() === 'TRUE' && b.toUpperCase() === 'TRUE') ? 'TRUE' : 'FALSE';
+        });
+    }
+    var xorRe = /\b(TRUE|FALSE)\s+XOR\s+(TRUE|FALSE)\b/i;
+    while (xorRe.test(cur)) {
+        cur = cur.replace(xorRe, function(_, a, b) {
+            return (a.toUpperCase() !== b.toUpperCase()) ? 'TRUE' : 'FALSE';
+        });
+    }
+    var orRe = /\b(TRUE|FALSE)\s+OR\s+(TRUE|FALSE)\b/i;
+    while (orRe.test(cur)) {
+        cur = cur.replace(orRe, function(_, a, b) {
+            return (a.toUpperCase() === 'TRUE' || b.toUpperCase() === 'TRUE') ? 'TRUE' : 'FALSE';
+        });
+    }
+    var impRe = /\b(TRUE|FALSE)\s+IMPLIES\s+(TRUE|FALSE)\b/i;
+    while (impRe.test(cur)) {
+        cur = cur.replace(impRe, function(_, a, b) {
+            return (a.toUpperCase() === 'TRUE' && b.toUpperCase() === 'FALSE') ? 'FALSE' : 'TRUE';
+        });
+    }
+    var eqRe = /\b(TRUE|FALSE)\s+EQUIV\s+(TRUE|FALSE)\b/i;
+    while (eqRe.test(cur)) {
+        cur = cur.replace(eqRe, function(_, a, b) {
+            return (a.toUpperCase() === b.toUpperCase()) ? 'TRUE' : 'FALSE';
+        });
+    }
+
+    var res = cur.includes('TRUE') ? 'TRUE' : 'FALSE';
+    return { val: res, rule: 'Standard propositional truth reduction' };
 }
 
 // ================= SET THEORY WITH ELEMENT-WISE COMPUTATION =================
@@ -936,93 +1125,146 @@ function formatSet(arr) {
     return '{' + unique.join(', ') + '}';
 }
 
+function parseSets(expr) {
+    var sets = [];
+    var re = /\{([^}]*)\}/g;
+    var m;
+    while ((m = re.exec(expr)) !== null) {
+        var items = m[1].split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+        var uniq = [];
+        items.forEach(function(x) { if (uniq.indexOf(x) === -1) uniq.push(x); });
+        sets.push(uniq);
+    }
+    return sets;
+}
+
 function evaluateSetTheory(expr) {
     var raw = expr.trim();
-    var steps = [];
     if (!raw) return { result: 'Error', steps: 'Empty set expression.' };
+    var steps = [];
+    steps.push('<strong>Set Theory Expression:</strong> ' + raw);
 
-    steps.push('<strong>Set Theory Operation:</strong> ' + raw);
+    var sets = parseSets(raw);
 
-    // Look for explicit sets {1,2,3} OP {2,3,4}
-    var setMatches = raw.match(/\{[^}]*\}|∅/g);
-    if (setMatches && setMatches.length >= 2) {
-        var setA = parseSet(setMatches[0]) || [];
-        var setB = parseSet(setMatches[1]) || [];
+    // Powerset
+    if (raw.indexOf('POWERSET') !== -1 || raw.indexOf('P(') !== -1) {
+        var targetSet = sets.length ? sets[0] : ['1', '2'];
+        var n = targetSet.length;
+        var totalSubsets = Math.pow(2, n);
+        steps.push('Target Set A = ' + formatSet(targetSet) + ', Cardinality |A| = ' + n);
+        steps.push('Powerset Theorem: A set with n elements has 2<sup>n</sup> subsets. Total subsets = 2<sup>' + n + '</sup> = <strong>' + totalSubsets + '</strong>');
+        var subsets = [];
+        for (var mask = 0; mask < totalSubsets; mask++) {
+            var sub = [];
+            var bin = mask.toString(2).padStart(n, '0');
+            for (var bit = 0; bit < n; bit++) {
+                if (mask & (1 << (n - 1 - bit))) sub.push(targetSet[bit]);
+            }
+            var subStr = formatSet(sub);
+            subsets.push(subStr);
+            steps.push('Subset ' + (mask + 1) + ' (Binary mask ' + bin + '): ' + subStr);
+        }
+        var pRes = '{' + subsets.join(', ') + '}';
+        steps.push('Result: P(A) = <strong>' + pRes + '</strong>');
+        return { result: pRes, steps: steps.join('\n') };
+    }
 
+    // Complement
+    if (raw.indexOf('COMPLEMENT') !== -1) {
+        var targetC = sets.length ? sets[0] : ['1', '2', '3'];
+        var universal = sets.length > 1 ? sets[1] : ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        steps.push('Target Set A = ' + formatSet(targetC));
+        steps.push('Universal Domain U = ' + formatSet(universal));
+        steps.push('Definition: Aᶜ = U \ A = { x ∈ U | x ∉ A }');
+        var comp = [];
+        universal.forEach(function(el) {
+            if (targetC.indexOf(el) === -1) {
+                comp.push(el);
+                steps.push('Element ' + el + ' ∈ U: not in A → Retained in complement');
+            } else {
+                steps.push('Element ' + el + ' ∈ U: present in A → Excluded from complement');
+            }
+        });
+        var cRes = formatSet(comp);
+        steps.push('Result Complement Aᶜ = <strong>' + cRes + '</strong> (Cardinality |Aᶜ| = ' + comp.length + ')');
+        return { result: cRes, steps: steps.join('\n') };
+    }
+
+    if (sets.length >= 2) {
+        var A = sets[0], B = sets[1];
+        steps.push('Set A = ' + formatSet(A) + '  (Cardinality |A| = ' + A.length + ')');
+        steps.push('Set B = ' + formatSet(B) + '  (Cardinality |B| = ' + B.length + ')');
+
+        // Union
         if (raw.indexOf('UNION') !== -1 || raw.indexOf('∪') !== -1) {
-            var union = [].concat(setA);
-            for (var i = 0; i < setB.length; i++) {
-                if (union.indexOf(setB[i]) === -1) union.push(setB[i]);
-            }
-            steps.push('Set A = ' + formatSet(setA));
-            steps.push('Set B = ' + formatSet(setB));
-            steps.push('<strong>Union (A ∪ B):</strong> All elements from Set A combined with all elements from Set B, removing duplicate entries.');
-            steps.push('A ∪ B = <strong>' + formatSet(union) + '</strong> (Cardinality |A ∪ B| = ' + union.length + ')');
-            return { result: formatSet(union), steps: steps.join('\n') };
-        }
-
-        if (raw.indexOf('∩') !== -1 || raw.indexOf('INTERSECT') !== -1) {
-            var intersect = [];
-            for (var j = 0; j < setA.length; j++) {
-                if (setB.indexOf(setA[j]) !== -1 && intersect.indexOf(setA[j]) === -1) {
-                    intersect.push(setA[j]);
+            steps.push('Operation: Union (A ∪ B) = { x | x ∈ A or x ∈ B }');
+            var union = [].concat(A);
+            steps.push('Step 1: Include all elements of Set A: ' + formatSet(A));
+            B.forEach(function(b) {
+                if (union.indexOf(b) === -1) {
+                    union.push(b);
+                    steps.push('Step 2: Inspect element ' + b + ' ∈ B → Not in A, append to union');
+                } else {
+                    steps.push('Step 2: Inspect element ' + b + ' ∈ B → Already in A, skip duplicate');
                 }
-            }
-            steps.push('Set A = ' + formatSet(setA));
-            steps.push('Set B = ' + formatSet(setB));
-            steps.push('<strong>Intersection (A ∩ B):</strong> Elements that belong to BOTH Set A and Set B simultaneously.');
-            steps.push('A ∩ B = <strong>' + formatSet(intersect) + '</strong> (Cardinality |A ∩ B| = ' + intersect.length + ')');
-            return { result: formatSet(intersect), steps: steps.join('\n') };
+            });
+            var uRes = formatSet(union);
+            steps.push('Final Union Set A ∪ B = <strong>' + uRes + '</strong> (Cardinality = ' + union.length + ')');
+            return { result: uRes, steps: steps.join('\n') };
         }
 
-        if (raw.indexOf('\\') !== -1 || raw.indexOf('DIFF') !== -1) {
+        // Intersection
+        if (raw.indexOf('INTERSECT') !== -1 || raw.indexOf('∩') !== -1) {
+            steps.push('Operation: Intersection (A ∩ B) = { x | x ∈ A and x ∈ B }');
+            var inter = [];
+            A.forEach(function(a) {
+                if (B.indexOf(a) !== -1) {
+                    inter.push(a);
+                    steps.push('Test element ' + a + ' ∈ A: Also found in Set B? YES → Included in A ∩ B');
+                } else {
+                    steps.push('Test element ' + a + ' ∈ A: Also found in Set B? NO → Excluded');
+                }
+            });
+            var iRes = formatSet(inter);
+            steps.push('Final Intersection Set A ∩ B = <strong>' + iRes + '</strong> (Cardinality = ' + inter.length + ')');
+            return { result: iRes, steps: steps.join('\n') };
+        }
+
+        // Difference
+        if (raw.indexOf('DIFF') !== -1 || raw.indexOf('\\') !== -1) {
+            steps.push('Operation: Relative Difference (A \\ B) = { x | x ∈ A and x ∉ B }');
             var diff = [];
-            for (var k = 0; k < setA.length; k++) {
-                if (setB.indexOf(setA[k]) === -1 && diff.indexOf(setA[k]) === -1) {
-                    diff.push(setA[k]);
+            A.forEach(function(a) {
+                if (B.indexOf(a) === -1) {
+                    diff.push(a);
+                    steps.push('Test element ' + a + ' ∈ A: Found in Set B? NO → Retained in A \\ B');
+                } else {
+                    steps.push('Test element ' + a + ' ∈ A: Found in Set B? YES → Removed');
                 }
-            }
-            steps.push('Set A = ' + formatSet(setA));
-            steps.push('Set B = ' + formatSet(setB));
-            steps.push('<strong>Relative Complement / Difference (A \\ B):</strong> Elements in A that are NOT in B.');
-            steps.push('A \\ B = <strong>' + formatSet(diff) + '</strong>');
-            return { result: formatSet(diff), steps: steps.join('\n') };
+            });
+            var dRes = formatSet(diff);
+            steps.push('Final Difference Set A \\ B = <strong>' + dRes + '</strong> (Cardinality = ' + diff.length + ')');
+            return { result: dRes, steps: steps.join('\n') };
         }
 
+        // Subset
         if (raw.indexOf('SUBSET') !== -1 || raw.indexOf('⊆') !== -1) {
+            steps.push('Operation: Subset Verification (A ⊆ B)');
+            steps.push('Definition: A ⊆ B is TRUE if and only if every element x ∈ A satisfies x ∈ B.');
             var isSub = true;
-            for (var m = 0; m < setA.length; m++) {
-                if (setB.indexOf(setA[m]) === -1) { isSub = false; break; }
+            for (var k = 0; k < A.length; k++) {
+                var el = A[k];
+                var inB = B.indexOf(el) !== -1;
+                steps.push('Check element ' + el + ' ∈ A: Present in B? ' + (inB ? 'YES' : 'NO'));
+                if (!inB) isSub = false;
             }
-            steps.push('Set A = ' + formatSet(setA));
-            steps.push('Set B = ' + formatSet(setB));
-            steps.push('<strong>Subset Test (A ⊆ B):</strong> True if every element of A is also found in B.');
-            steps.push('A ⊆ B = <strong>' + (isSub ? 'TRUE' : 'FALSE') + '</strong>');
+            steps.push('Conclusion: ' + (isSub ? 'Every element of A is contained in B.' : 'At least one element of A is missing from B.'));
+            steps.push('Subset Truth Value: <strong>' + (isSub ? 'TRUE' : 'FALSE') + '</strong>');
             return { result: isSub ? 'TRUE' : 'FALSE', steps: steps.join('\n') };
         }
     }
 
-    // Powerset operation
-    if (raw.indexOf('POWERSET') !== -1 || raw.indexOf('P(') !== -1) {
-        var pMatch = raw.match(/\{[^}]*\}/);
-        var targetSet = pMatch ? (parseSet(pMatch[0]) || []) : ['1', '2'];
-        var n = targetSet.length;
-        var totalSubsets = Math.pow(2, n);
-        var subsets = [];
-        for (var pi = 0; pi < totalSubsets; pi++) {
-            var subset = [];
-            for (var pj = 0; pj < n; pj++) {
-                if ((pi & (1 << pj)) !== 0) subset.push(targetSet[pj]);
-            }
-            subsets.push(formatSet(subset));
-        }
-        steps.push('Set A = ' + formatSet(targetSet) + ' (n = ' + n + ' elements)');
-        steps.push('<strong>Powerset Formula:</strong> |P(A)| = 2<sup>n</sup> = 2<sup>' + n + '</sup> = <strong>' + totalSubsets + ' subsets</strong>');
-        steps.push('P(A) = {' + subsets.join(', ') + '}');
-        return { result: '{' + subsets.join(', ') + '}', steps: steps.join('\n') };
-    }
-
-    // Symbolic descriptions fallback
+    // Symbolic fallback
     steps.push('<strong>Set Operator Definitions:</strong>');
     steps.push('• <strong>UNION (A ∪ B):</strong> Elements in A or B or both (e.g. {1,2} ∪ {2,3} = {1,2,3})');
     steps.push('• <strong>INTERSECTION (A ∩ B):</strong> Elements present in both (e.g. {1,2} ∩ {2,3} = {2})');
@@ -1033,54 +1275,59 @@ function evaluateSetTheory(expr) {
 
 // ================= COMBINATORICS WITH PROOFS =================
 function evaluateCombinatorics(expr) {
-    var u = expr.toUpperCase();
-    var m = u.match(/NCR\s*\(?\s*(\d+)\s*,\s*(\d+)/i);
-    if (m) {
-        var n = parseInt(m[1], 10), r = parseInt(m[2], 10);
+    var raw = expr.trim();
+    var steps = [];
+    steps.push('<strong>Combinatorics Evaluation:</strong> ' + raw);
+
+    var norm = raw.replace(/(\d+)\s*(?:nCr|C)\s*(\d+)/gi, 'nCr($1, $2)');
+    norm = norm.replace(/(\d+)\s*(?:nPr|P)\s*(\d+)/gi, 'nPr($1, $2)');
+
+    var singleNCR = norm.match(/^nCr\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+    if (singleNCR) {
+        var n = parseInt(singleNCR[1], 10), r = parseInt(singleNCR[2], 10);
         if (r > n) return { result: 'Error', steps: 'Error: r (' + r + ') cannot exceed n (' + n + ').' };
         var fn = fact(n), fr = fact(r), fnr = fact(n - r);
-        var res = fn / (fr * fnr);
-        var steps = [
-            '<strong>Combination Formula:</strong> C(n, r) = <sup>n!</sup> / <sub>(r! × (n − r)!)</sub>',
-            'Parameters: n = ' + n + ' (total items), r = ' + r + ' (items chosen without order)',
-            'Step 1: ' + n + '! = ' + fn,
-            'Step 2: ' + r + '! = ' + fr,
-            'Step 3: (' + n + ' − ' + r + ')! = ' + (n - r) + '! = ' + fnr,
-            'Step 4: C(' + n + ', ' + r + ') = ' + fn + ' / (' + fr + ' × ' + fnr + ')',
-            'Step 5: = ' + fn + ' / ' + (fr * fnr) + ' = <strong>' + res + '</strong>',
-            '<em>Interpretation: There are ' + res + ' distinct ways to choose ' + r + ' items from ' + n + ' items.</em>'
-        ];
+        var den = fr * fnr;
+        var res = fn / den;
+        var seqN = []; for(var i=n; i>=1; i--) seqN.push(i);
+        var seqR = []; for(var j=r; j>=1; j--) seqR.push(j);
+        var seqNR = []; for(var k=n-r; k>=1; k--) seqNR.push(k);
+        steps.push('Formula: C(n, r) = n! / [r! × (n − r)!]');
+        steps.push('Parameters: Total items n = ' + n + ', Selected items r = ' + r);
+        steps.push('Step 1: Compute n! (' + n + '!): ' + (seqN.length ? seqN.join(' × ') : '1') + ' = ' + fn);
+        steps.push('Step 2: Compute r! (' + r + '!): ' + (seqR.length ? seqR.join(' × ') : '1') + ' = ' + fr);
+        steps.push('Step 3: Compute (n - r)! (' + (n - r) + '!): ' + (seqNR.length ? seqNR.join(' × ') : '1') + ' = ' + fnr);
+        steps.push('Step 4: Denominator product = r! × (n − r)! = ' + fr + ' × ' + fnr + ' = ' + den);
+        steps.push('Step 5: Final division = ' + fn + ' ÷ ' + den + ' = <strong>' + res + '</strong>');
+        steps.push('<em>Combinatorial Meaning: There are ' + res + ' distinct ways to select ' + r + ' items from a set of ' + n + ' items without regard to order.</em>');
         return { result: res, steps: steps.join('\n') };
     }
 
-    m = u.match(/NPR\s*\(?\s*(\d+)\s*,\s*(\d+)/i);
-    if (m) {
-        var n2 = parseInt(m[1], 10), r2 = parseInt(m[2], 10);
+    var singleNPR = norm.match(/^nPr\s*\(\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+    if (singleNPR) {
+        var n2 = parseInt(singleNPR[1], 10), r2 = parseInt(singleNPR[2], 10);
         if (r2 > n2) return { result: 'Error', steps: 'Error: r (' + r2 + ') cannot exceed n (' + n2 + ').' };
         var fn2 = fact(n2), fnr2 = fact(n2 - r2);
         var res2 = fn2 / fnr2;
-        var steps2 = [
-            '<strong>Permutation Formula:</strong> P(n, r) = <sup>n!</sup> / <sub>(n − r)!</sub>',
-            'Parameters: n = ' + n2 + ' (total items), r = ' + r2 + ' (items arranged with order)',
-            'Step 1: ' + n2 + '! = ' + fn2,
-            'Step 2: (' + n2 + ' − ' + r2 + ')! = ' + (n2 - r2) + '! = ' + fnr2,
-            'Step 3: P(' + n2 + ', ' + r2 + ') = ' + fn2 + ' / ' + fnr2 + ' = <strong>' + res2 + '</strong>',
-            '<em>Interpretation: There are ' + res2 + ' distinct ordered arrangements of ' + r2 + ' items from ' + n2 + ' items.</em>'
-        ];
-        return { result: res2, steps: steps2.join('\n') };
+        var seqN2 = []; for(var i2=n2; i2>=1; i2--) seqN2.push(i2);
+        var seqNR2 = []; for(var k2=n2-r2; k2>=1; k2--) seqNR2.push(k2);
+        steps.push('Formula: P(n, r) = n! / (n − r)!');
+        steps.push('Parameters: Total items n = ' + n2 + ', Arranged items r = ' + r2);
+        steps.push('Step 1: Compute n! (' + n2 + '!): ' + (seqN2.length ? seqN2.join(' × ') : '1') + ' = ' + fn2);
+        steps.push('Step 2: Compute (n - r)! (' + (n2 - r2) + '!): ' + (seqNR2.length ? seqNR2.join(' × ') : '1') + ' = ' + fnr2);
+        steps.push('Step 3: Final division = ' + fn2 + ' ÷ ' + fnr2 + ' = <strong>' + res2 + '</strong>');
+        steps.push('<em>Combinatorial Meaning: There are ' + res2 + ' distinct ordered arrangements when selecting ' + r2 + ' items from ' + n2 + ' items.</em>');
+        return { result: res2, steps: steps.join('\n') };
     }
 
-    m = u.match(/(\d+)!/);
-    if (m) {
-        var n3 = parseInt(m[1], 10);
+    var singleFact = norm.match(/^(\d+)!$/);
+    if (singleFact) {
+        var n3 = parseInt(singleFact[1], 10);
         var res3 = fact(n3);
-        var chain = [];
-        for (var i = n3; i >= 1; i--) chain.push(i);
-        var steps3 = [
-            '<strong>Factorial Definition:</strong> ' + n3 + '! is the product of all positive integers ≤ ' + n3,
-            n3 + '! = ' + chain.join(' × ') + ' = <strong>' + res3 + '</strong>'
-        ];
-        return { result: res3, steps: steps3.join('\n') };
+        var seq3 = []; for(var i3=n3; i3>=1; i3--) seq3.push(i3);
+        steps.push('Factorial Definition: n! is the product of all positive integers from 1 up to n.');
+        steps.push(n3 + '! = ' + (seq3.length ? seq3.join(' × ') : '1') + ' = <strong>' + res3 + '</strong>');
+        return { result: res3, steps: steps.join('\n') };
     }
 
     return evaluateUniversal(expr);
@@ -1100,10 +1347,12 @@ function evaluateNumberTheory(expr) {
     if (m) {
         var a2 = parseInt(m[1], 10), b2 = parseInt(m[2], 10);
         var gStep = extendedGcdWithSteps(a2, b2);
-        var l = (a2 * b2) / gStep.gcd;
+        var prod = a2 * b2;
+        var l = prod / gStep.gcd;
         var steps = gStep.steps.concat([
             '<strong>LCM Formula:</strong> lcm(a, b) = (|a × b|) / gcd(a, b)',
-            'lcm(' + a2 + ', ' + b2 + ') = (' + a2 + ' × ' + b2 + ') / ' + gStep.gcd + ' = ' + (a2 * b2) + ' / ' + gStep.gcd + ' = <strong>' + l + '</strong>'
+            'Step 1: Product = ' + a2 + ' × ' + b2 + ' = ' + prod,
+            'Step 2: Divide by GCD = ' + prod + ' ÷ ' + gStep.gcd + ' = <strong>' + l + '</strong>'
         ]);
         return { result: l, steps: steps.join('\n') };
     }
@@ -1112,19 +1361,29 @@ function evaluateNumberTheory(expr) {
     if (m) {
         var base = parseInt(m[1], 10), exp = parseInt(m[2], 10), modVal = parseInt(m[3], 10);
         if (modVal === 0) return { result: 'Error', steps: 'Error: Modulo cannot be 0.' };
-        var mpSteps = ['<strong>Modular Exponentiation (' + base + '<sup>' + exp + '</sup> mod ' + modVal + ') via Repeated Squaring:</strong>'];
+        var mpSteps = ['<strong>Modular Exponentiation (' + base + '<sup>' + exp + '</sup> mod ' + modVal + ') via Binary Exponentiation:</strong>'];
+        mpSteps.push('Binary representation of exponent ' + exp + ': ' + exp.toString(2));
         var curBase = base % modVal;
         var curExp = exp;
         var mpRes = 1;
+        var stepCount = 1;
         while (curExp > 0) {
             if (curExp % 2 === 1) {
-                mpSteps.push('Exp odd: res = (' + mpRes + ' × ' + curBase + ') mod ' + modVal + ' = ' + ((mpRes * curBase) % modVal));
+                var prevRes = mpRes;
                 mpRes = (mpRes * curBase) % modVal;
+                mpSteps.push('Step ' + stepCount + ' (Bit 1): Multiply result = (' + prevRes + ' × ' + curBase + ') mod ' + modVal + ' = <strong>' + mpRes + '</strong>');
+            } else {
+                mpSteps.push('Step ' + stepCount + ' (Bit 0): Exponent bit is 0, result remains <strong>' + mpRes + '</strong>');
             }
-            curBase = (curBase * curBase) % modVal;
             curExp = Math.floor(curExp / 2);
+            if (curExp > 0) {
+                var prevBase = curBase;
+                curBase = (curBase * curBase) % modVal;
+                mpSteps.push('  Square base: (' + prevBase + ')² mod ' + modVal + ' = ' + (prevBase * prevBase) + ' mod ' + modVal + ' = ' + curBase);
+            }
+            stepCount++;
         }
-        mpSteps.push('Final Result = <strong>' + mpRes + '</strong>');
+        mpSteps.push('Final Result (' + base + '<sup>' + exp + '</sup> mod ' + modVal + ') = <strong>' + mpRes + '</strong>');
         return { result: mpRes, steps: mpSteps.join('\n') };
     }
 
@@ -1133,17 +1392,32 @@ function evaluateNumberTheory(expr) {
         var pn = parseInt(m[1], 10);
         var phiSteps = ['<strong>Euler\'s Totient Function φ(' + pn + '):</strong>'];
         phiSteps.push('φ(n) counts integers k in 1 ≤ k ≤ n such that gcd(k, n) = 1.');
-        var count = 0;
-        var coprimes = [];
-        for (var k = 1; k <= pn; k++) {
-            if (gcd(k, pn) === 1) {
-                count++;
-                if (coprimes.length < 15) coprimes.push(k);
+        var temp = pn;
+        var pFactors = [];
+        for (var p = 2; p * p <= temp; p++) {
+            if (temp % p === 0) {
+                pFactors.push(p);
+                while (temp % p === 0) temp /= p;
             }
         }
-        phiSteps.push('Coprimes with ' + pn + ': ' + coprimes.join(', ') + (count > 15 ? ' ...' : ''));
-        phiSteps.push('φ(' + pn + ') = <strong>' + count + '</strong>');
-        return { result: count, steps: phiSteps.join('\n') };
+        if (temp > 1) pFactors.push(temp);
+        phiSteps.push('Step 1 (Distinct Prime Factors of ' + pn + '): [' + pFactors.join(', ') + ']');
+
+        var phiCalc = pn;
+        var productTerms = [];
+        pFactors.forEach(function(pf) {
+            phiCalc = phiCalc * (pf - 1) / pf;
+            productTerms.push('(1 − 1/' + pf + ')');
+        });
+        phiSteps.push('Step 2 (Euler Product Formula): φ(n) = n × ∏ (1 − 1/p)');
+        phiSteps.push('φ(' + pn + ') = ' + pn + ' × ' + productTerms.join(' × ') + ' = <strong>' + phiCalc + '</strong>');
+
+        var coprimes = [];
+        for (var k = 1; k <= pn; k++) {
+            if (gcd(k, pn) === 1 && coprimes.length < 20) coprimes.push(k);
+        }
+        phiSteps.push('Coprime integers with ' + pn + ': {' + coprimes.join(', ') + (phiCalc > 20 ? ', ...' : '') + '}');
+        return { result: phiCalc, steps: phiSteps.join('\n') };
     }
 
     m = u.match(/mod\s*\(?\s*(\d+)\s*,\s*(\d+)/);
@@ -1154,9 +1428,10 @@ function evaluateNumberTheory(expr) {
         var mm = md - q * dv;
         var steps4 = [
             '<strong>Modulo Definition (Dividend mod Divisor):</strong>',
-            md + ' ÷ ' + dv + ' = ' + q + ' with remainder <strong>' + mm + '</strong>',
-            'Formula: ' + md + ' = (' + q + ' × ' + dv + ') + ' + mm,
-            'So ' + md + ' mod ' + dv + ' = <strong>' + mm + '</strong>'
+            'Step 1: Integer Quotient = ⌊' + md + ' ÷ ' + dv + '⌋ = ' + q,
+            'Step 2: Remainder = ' + md + ' − (' + q + ' × ' + dv + ') = ' + md + ' − ' + (q * dv) + ' = <strong>' + mm + '</strong>',
+            'Verification: ' + md + ' = (' + q + ' × ' + dv + ') + ' + mm + '  (where 0 ≤ ' + mm + ' < ' + dv + ')',
+            'Result: ' + md + ' mod ' + dv + ' = <strong>' + mm + '</strong>'
         ];
         return { result: mm, steps: steps4.join('\n') };
     }
@@ -1171,18 +1446,21 @@ function evaluateNumberTheory(expr) {
         }
         var isPrime = true;
         var limit = Math.floor(Math.sqrt(numP));
-        steps5.push('Trial division threshold: √' + numP + ' ≈ ' + limit);
+        steps5.push('Step 1: Calculate trial division limit ⌊√' + numP + '⌋ = ' + limit);
+        steps5.push('Step 2: Test candidate divisors 2, 3, 5, 7, ... up to ' + limit);
         for (var di = 2; di <= limit; di++) {
             if (numP % di === 0) {
-                steps5.push('Divisible by ' + di + ' (' + numP + ' ÷ ' + di + ' = ' + (numP / di) + ').');
+                steps5.push('  Candidate ' + di + ': ' + numP + ' ÷ ' + di + ' = ' + (numP / di) + ' (Exact division! Factor found)');
                 isPrime = false;
                 break;
+            } else {
+                steps5.push('  Candidate ' + di + ': ' + numP + ' ÷ ' + di + ' = ' + Math.floor(numP / di) + ' R ' + (numP % di) + ' (Not a divisor)');
             }
         }
         if (isPrime) {
-            steps5.push('No integer factors found between 2 and ' + limit + '. ' + numP + ' is <strong>PRIME</strong>.');
+            steps5.push('Conclusion: No divisor found between 2 and ' + limit + '. ' + numP + ' is <strong>PRIME</strong>.');
         } else {
-            steps5.push('Since a non-trivial factor was discovered, ' + numP + ' is <strong>COMPOSITE</strong>.');
+            steps5.push('Conclusion: Composite number with factor ' + di + '. ' + numP + ' is <strong>COMPOSITE</strong>.');
         }
         return { result: isPrime ? 'TRUE' : 'FALSE', steps: steps5.join('\n') };
     }
@@ -1194,20 +1472,22 @@ function evaluateNumberTheory(expr) {
         var factors = [];
         var steps6 = ['<strong>Prime Factorization of ' + numF + ':</strong>'];
         var d = 2, x = numF;
+        var stepNum = 1;
         while (d * d <= x) {
             while (x % d === 0) {
-                steps6.push(x + ' ÷ ' + d + ' = ' + (x / d));
+                var nextX = x / d;
+                steps6.push('Step ' + stepNum + ': ' + x + ' ÷ ' + d + ' = ' + nextX + '  (Prime factor ' + d + ')');
                 factors.push(d);
-                x /= d;
+                x = nextX;
+                stepNum++;
             }
             d++;
         }
         if (x > 1) {
             factors.push(x);
-            steps6.push(x + ' is prime (final factor).');
+            steps6.push('Step ' + stepNum + ': ' + x + ' is prime (Final factor)');
         }
 
-        // Count factor powers
         var counts = {};
         for (var fi = 0; fi < factors.length; fi++) {
             counts[factors[fi]] = (counts[factors[fi]] || 0) + 1;
@@ -1216,7 +1496,7 @@ function evaluateNumberTheory(expr) {
             return counts[k] > 1 ? (k + '<sup>' + counts[k] + '</sup>') : k;
         }).join(' × ');
 
-        steps6.push('Prime factors: ' + factors.join(' × '));
+        steps6.push('Prime Factor List: ' + factors.join(' × '));
         steps6.push('Canonical Exponential Form: <strong>' + powerForm + '</strong>');
         return { result: factors.join(' × '), steps: steps6.join('\n') };
     }
@@ -1226,7 +1506,7 @@ function evaluateNumberTheory(expr) {
 
 // ================= CONVERSION =================
 function evaluateConversion(expr) {
-    var m = expr.match(/(DEC → BINARY|BIN → DECIMAL|DEC → HEX|HEX → DECIMAL|DEC → OCT|OCT → DECIMAL|BIN → HEX|HEX → BINARY)\s+(\S+)/i);
+    var m = expr.match(/(DEC → BINARY|BIN → DECIMAL|DEC → HEX|HEX → DECIMAL|DEC → OCT|OCT → DECIMAL|BIN → HEX|HEX → BINARY|BIN → OCT|OCT → BINARY)\s+(\S+)/i);
     if (!m) return { result: 'Error', steps: 'Format: DEC → BINARY 255 (tap a conversion button, then enter the value)' };
     var type = m[1].toUpperCase(), val = m[2];
 
@@ -1256,18 +1536,35 @@ function evaluateConversion(expr) {
             return { result: r6.result, steps: r6.steps.join('\n') };
         }
         if (type === 'BIN → HEX') {
-            var toDecimal = fromBaseWithSteps(val, 2);
-            var toHex = toBaseWithSteps(toDecimal.result, 16);
-            var combined = ['<strong>Step 1: Convert Binary to Decimal:</strong>'].concat(toDecimal.steps)
-                .concat(['<strong>Step 2: Convert Decimal to Hexadecimal:</strong>']).concat(toHex.steps);
-            return { result: toHex.result, steps: combined.join('\n') };
+            var stepsNibbles = ['<strong>Binary to Hexadecimal 4-bit Nibble Grouping:</strong>'];
+            var cleanBin = val.replace(/\s+/g, '');
+            var padLen = (4 - (cleanBin.length % 4)) % 4;
+            var paddedBin = '0'.repeat(padLen) + cleanBin;
+            stepsNibbles.push('Input: <code>' + cleanBin + '</code> (Padded to 4-bit groups: <code>' + paddedBin + '</code>)');
+            var hexRes = '';
+            for (var ni = 0; ni < paddedBin.length; ni += 4) {
+                var nibble = paddedBin.slice(ni, ni + 4);
+                var decVal = parseInt(nibble, 2);
+                var hexDigit = decVal.toString(16).toUpperCase();
+                hexRes += hexDigit;
+                stepsNibbles.push('Nibble <code>' + nibble + '</code>: (' + nibble[0] + '×8 + ' + nibble[1] + '×4 + ' + nibble[2] + '×2 + ' + nibble[3] + '×1) = ' + decVal + ' → Hex <strong>' + hexDigit + '</strong>');
+            }
+            stepsNibbles.push('Final Hexadecimal: <strong>0x' + hexRes + '</strong>');
+            return { result: hexRes, steps: stepsNibbles.join('\n') };
         }
         if (type === 'HEX → BINARY') {
-            var hexToDec = fromBaseWithSteps(val, 16);
-            var decToBin = toBaseWithSteps(hexToDec.result, 2);
-            var combinedHexBin = ['<strong>Step 1: Convert Hex to Decimal:</strong>'].concat(hexToDec.steps)
-                .concat(['<strong>Step 2: Convert Decimal to Binary:</strong>']).concat(decToBin.steps);
-            return { result: decToBin.result, steps: combinedHexBin.join('\n') };
+            var stepsHexBin = ['<strong>Hexadecimal to Binary (4-bit per Hex Digit):</strong>'];
+            var cleanHex = val.toUpperCase().replace(/^0X/, '');
+            var binRes2 = '';
+            for (var hi = 0; hi < cleanHex.length; hi++) {
+                var ch = cleanHex[hi];
+                var hDec = parseInt(ch, 16);
+                var hBin = hDec.toString(2).padStart(4, '0');
+                binRes2 += hBin;
+                stepsHexBin.push('Hex digit \'' + ch + '\' = ' + hDec + ' → 4-bit binary <code>' + hBin + '</code>');
+            }
+            stepsHexBin.push('Concatenated Binary Result: <strong>' + binRes2 + '</strong>');
+            return { result: binRes2, steps: stepsHexBin.join('\n') };
         }
     } catch (e) { return { result: 'Error', steps: 'Invalid numeric input: ' + e.message }; }
     return { result: 'Error', steps: 'Unknown conversion request' };
@@ -1276,7 +1573,6 @@ function evaluateConversion(expr) {
 // ================= MATRIX ALGEBRA (2x2) =================
 function evaluateMatrix(expr) {
     var raw = expr.trim();
-    // Allow bracketed notation e.g. det2x2([1, 2], [3, 4]) or det2x2(1, 2, 3, 4)
     var u = raw.toLowerCase().replace(/[\[\]]/g, ' ');
 
     // det2x2(a, b, c, d)
@@ -1289,10 +1585,10 @@ function evaluateMatrix(expr) {
             '<strong>2×2 Matrix Determinant:</strong>',
             'Matrix A = [ [' + a + ', ' + b + '], [' + c + ', ' + d + '] ]',
             'Formula: det(A) = (a × d) − (b × c)',
-            'Step 1 (Main Diagonal): ' + a + ' × ' + d + ' = ' + ad,
-            'Step 2 (Anti-Diagonal): ' + b + ' × ' + c + ' = ' + bc,
-            'Step 3: det(A) = ' + ad + ' − ' + bc + ' = <strong>' + det + '</strong>',
-            det === 0 ? '<em>Matrix is singular (non-invertible).</em>' : '<em>Matrix is non-singular (invertible).</em>'
+            'Step 1 (Main Diagonal Product): ' + a + ' × ' + d + ' = ' + ad,
+            'Step 2 (Anti-Diagonal Product): ' + b + ' × ' + c + ' = ' + bc,
+            'Step 3 (Difference): det(A) = ' + ad + ' − (' + bc + ') = <strong>' + det + '</strong>',
+            det === 0 ? '<em>Matrix is singular (det = 0): No inverse exists.</em>' : '<em>Matrix is non-singular (det ≠ 0): Unique inverse exists.</em>'
         ];
         return { result: det, steps: steps.join('\n') };
     }
@@ -1302,48 +1598,56 @@ function evaluateMatrix(expr) {
     if (m) {
         var a2 = +m[1], b2 = +m[2], c2 = +m[3], d2 = +m[4];
         var det2 = a2 * d2 - b2 * c2;
-        if (det2 === 0) return { result: 'Error', steps: 'Determinant is 0. Inverse does not exist (Matrix is singular).' };
-        var invA = (d2 / det2).toFixed(3), invB = (-b2 / det2).toFixed(3);
-        var invC = (-c2 / det2).toFixed(3), invD = (a2 / det2).toFixed(3);
         var stepsInv = [
-            '<strong>2×2 Matrix Inverse:</strong>',
+            '<strong>2×2 Matrix Inversion:</strong>',
             'Matrix A = [ [' + a2 + ', ' + b2 + '], [' + c2 + ', ' + d2 + '] ]',
-            'Formula: A<sup>-1</sup> = (1 / det(A)) × [ [d, -b], [-c, a] ]',
-            'Step 1 (Determinant): det(A) = (' + a2 + ' × ' + d2 + ') − (' + b2 + ' × ' + c2 + ') = ' + det2,
-            'Step 2 (Adjugate Matrix): adj(A) = [ [' + d2 + ', ' + (-b2) + '], [' + (-c2) + ', ' + a2 + '] ]',
-            'Step 3 (Multiply by 1/det):',
-            'A<sup>-1</sup> = <strong>[ [' + invA + ', ' + invB + '], [' + invC + ', ' + invD + '] ]</strong>'
+            'Inversion Formula: A<sup>−1</sup> = (1 / det(A)) × [ [d, −b], [−c, a] ]'
         ];
-        return { result: '[[' + invA + ', ' + invB + '], [' + invC + ', ' + invD + ']]', steps: stepsInv.join('\n') };
+        if (det2 === 0) {
+            stepsInv.push('Step 1: det(A) = (' + a2 + ' × ' + d2 + ') − (' + b2 + ' × ' + c2 + ') = 0');
+            stepsInv.push('<strong>Error: Matrix is singular. Division by determinant zero is undefined.</strong>');
+            return { result: 'Singular (No Inverse)', steps: stepsInv.join('\n') };
+        }
+        var invA = (d2 / det2).toFixed(4), invB = (-b2 / det2).toFixed(4);
+        var invC = (-c2 / det2).toFixed(4), invD = (a2 / det2).toFixed(4);
+        stepsInv.push('Step 1 (Determinant): det(A) = (' + a2 + ' × ' + d2 + ') − (' + b2 + ' × ' + c2 + ') = ' + det2);
+        stepsInv.push('Step 2 (Adjugate Matrix): adj(A) = [ [' + d2 + ', ' + (-b2) + '], [' + (-c2) + ', ' + a2 + '] ]');
+        stepsInv.push('Step 3 (Scalar Division by det):');
+        stepsInv.push('  Row 1, Col 1: ' + d2 + ' / ' + det2 + ' = ' + invA);
+        stepsInv.push('  Row 1, Col 2: ' + (-b2) + ' / ' + det2 + ' = ' + invB);
+        stepsInv.push('  Row 2, Col 1: ' + (-c2) + ' / ' + det2 + ' = ' + invC);
+        stepsInv.push('  Row 2, Col 2: ' + a2 + ' / ' + det2 + ' = ' + invD);
+        var resInv = '[ [' + invA + ', ' + invB + '], [' + invC + ', ' + invD + '] ]';
+        stepsInv.push('Inverse Matrix A<sup>−1</sup> = <strong>' + resInv + '</strong>');
+        return { result: resInv, steps: stepsInv.join('\n') };
     }
 
-    // trans2x2(a, b, c, d) - Transpose
+    // trans2x2(a, b, c, d)
     m = u.match(/trans2x2\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
     if (m) {
         var ta = +m[1], tb = +m[2], tc = +m[3], td = +m[4];
         var stepsTrans = [
-            '<strong>2×2 Matrix Transpose:</strong>',
+            '<strong>2×2 Matrix Transposition:</strong>',
             'Matrix A = [ [' + ta + ', ' + tb + '], [' + tc + ', ' + td + '] ]',
-            'Formula: Transpose Aᵀ swaps rows and columns ((Aᵀ)ᵢⱼ = Aⱼᵢ)',
+            'Definition: Transpose Aᵀ reflects entries across the main diagonal ((Aᵀ)ᵢⱼ = Aⱼᵢ)',
             'Row 1 [' + ta + ', ' + tb + '] becomes Column 1',
             'Row 2 [' + tc + ', ' + td + '] becomes Column 2',
-            'Result: Aᵀ = <strong>[ [' + ta + ', ' + tc + '], [' + tb + ', ' + td + '] ]</strong>'
+            'Transpose Result Aᵀ = <strong>[ [' + ta + ', ' + tc + '], [' + tb + ', ' + td + '] ]</strong>'
         ];
-        return { result: '[[' + ta + ', ' + tc + '], [' + tb + ', ' + td + ']]', steps: stepsTrans.join('\n') };
+        return { result: '[ [' + ta + ', ' + tc + '], [' + tb + ', ' + td + '] ]', steps: stepsTrans.join('\n') };
     }
 
-    // trace2x2(a, b, c, d) - Trace
+    // trace2x2(a, b, c, d)
     m = u.match(/trace2x2\s*\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
     if (m) {
         var tra = +m[1], trb = +m[2], trc = +m[3], trd = +m[4];
         var trVal = tra + trd;
-        if (typeof trVal === 'number' && !Number.isInteger(trVal)) trVal = parseFloat(trVal.toFixed(6));
         var stepsTrace = [
             '<strong>2×2 Matrix Trace:</strong>',
             'Matrix A = [ [' + tra + ', ' + trb + '], [' + trc + ', ' + trd + '] ]',
-            'Formula: tr(A) = a₁₁ + a₂₂ (Sum of main diagonal entries)',
-            'Step 1 (Main Diagonal Elements): ' + tra + ' and ' + trd,
-            'Step 2: tr(A) = ' + tra + ' + ' + trd + ' = <strong>' + trVal + '</strong>'
+            'Definition: tr(A) is the sum of main diagonal entries: a₁₁ + a₂₂',
+            'Step 1: Identify diagonal elements: a₁₁ = ' + tra + ', a₂₂ = ' + trd,
+            'Step 2: Sum = ' + tra + ' + ' + trd + ' = <strong>' + trVal + '</strong>'
         ];
         return { result: trVal, steps: stepsTrace.join('\n') };
     }
@@ -1357,13 +1661,13 @@ function evaluateMatrix(expr) {
             '<strong>2×2 Matrix Addition:</strong>',
             'Matrix A = [ [' + vals[0] + ', ' + vals[1] + '], [' + vals[2] + ', ' + vals[3] + '] ]',
             'Matrix B = [ [' + vals[4] + ', ' + vals[5] + '], [' + vals[6] + ', ' + vals[7] + '] ]',
-            'Row 1, Col 1: ' + vals[0] + ' + ' + vals[4] + ' = ' + r11,
-            'Row 1, Col 2: ' + vals[1] + ' + ' + vals[5] + ' = ' + r12,
-            'Row 2, Col 1: ' + vals[2] + ' + ' + vals[6] + ' = ' + r21,
-            'Row 2, Col 2: ' + vals[3] + ' + ' + vals[7] + ' = ' + r22,
-            'Result = <strong>[ [' + r11 + ', ' + r12 + '], [' + r21 + ', ' + r22 + '] ]</strong>'
+            'Row 1, Col 1: ' + vals[0] + ' + ' + vals[4] + ' = <strong>' + r11 + '</strong>',
+            'Row 1, Col 2: ' + vals[1] + ' + ' + vals[5] + ' = <strong>' + r12 + '</strong>',
+            'Row 2, Col 1: ' + vals[2] + ' + ' + vals[6] + ' = <strong>' + r21 + '</strong>',
+            'Row 2, Col 2: ' + vals[3] + ' + ' + vals[7] + ' = <strong>' + r22 + '</strong>',
+            'Sum Matrix A + B = <strong>[ [' + r11 + ', ' + r12 + '], [' + r21 + ', ' + r22 + '] ]</strong>'
         ];
-        return { result: '[[' + r11 + ', ' + r12 + '], [' + r21 + ', ' + r22 + ']]', steps: steps2.join('\n') };
+        return { result: '[ [' + r11 + ', ' + r12 + '], [' + r21 + ', ' + r22 + '] ]', steps: steps2.join('\n') };
     }
 
     // mul2x2
@@ -1375,33 +1679,48 @@ function evaluateMatrix(expr) {
         var r2c1 = v[2] * v[4] + v[3] * v[6];
         var r2c2 = v[2] * v[5] + v[3] * v[7];
         var steps3 = [
-            '<strong>2×2 Matrix Multiplication (Row · Column):</strong>',
+            '<strong>2×2 Matrix Multiplication (Row · Column Dot Products):</strong>',
             'Matrix A = [ [' + v[0] + ', ' + v[1] + '], [' + v[2] + ', ' + v[3] + '] ]',
             'Matrix B = [ [' + v[4] + ', ' + v[5] + '], [' + v[6] + ', ' + v[7] + '] ]',
-            'Cell (1,1) = (' + v[0] + ' × ' + v[4] + ') + (' + v[1] + ' × ' + v[6] + ') = ' + r1c1,
-            'Cell (1,2) = (' + v[0] + ' × ' + v[5] + ') + (' + v[1] + ' × ' + v[7] + ') = ' + r1c2,
-            'Cell (2,1) = (' + v[2] + ' × ' + v[4] + ') + (' + v[3] + ' × ' + v[6] + ') = ' + r2c1,
-            'Cell (2,2) = (' + v[2] + ' × ' + v[5] + ') + (' + v[3] + ' × ' + v[7] + ') = ' + r2c2,
-            'Result = <strong>[ [' + r1c1 + ', ' + r1c2 + '], [' + r2c1 + ', ' + r2c2 + '] ]</strong>'
+            'Cell (1,1): (' + v[0] + ' × ' + v[4] + ') + (' + v[1] + ' × ' + v[6] + ') = ' + (v[0]*v[4]) + ' + ' + (v[1]*v[6]) + ' = <strong>' + r1c1 + '</strong>',
+            'Cell (1,2): (' + v[0] + ' × ' + v[5] + ') + (' + v[1] + ' × ' + v[7] + ') = ' + (v[0]*v[5]) + ' + ' + (v[1]*v[7]) + ' = <strong>' + r1c2 + '</strong>',
+            'Cell (2,1): (' + v[2] + ' × ' + v[4] + ') + (' + v[3] + ' × ' + v[6] + ') = ' + (v[2]*v[4]) + ' + ' + (v[3]*v[6]) + ' = <strong>' + r2c1 + '</strong>',
+            'Cell (2,2): (' + v[2] + ' × ' + v[5] + ') + (' + v[3] + ' × ' + v[7] + ') = ' + (v[2]*v[5]) + ' + ' + (v[3]*v[7]) + ' = <strong>' + r2c2 + '</strong>',
+            'Product Matrix AB = <strong>[ [' + r1c1 + ', ' + r1c2 + '], [' + r2c1 + ', ' + r2c2 + '] ]</strong>'
         ];
-        return { result: '[[' + r1c1 + ', ' + r1c2 + '], [' + r2c1 + ', ' + r2c2 + ']]', steps: steps3.join('\n') };
+        return { result: '[ [' + r1c1 + ', ' + r1c2 + '], [' + r2c1 + ', ' + r2c2 + '] ]', steps: steps3.join('\n') };
     }
 
     return { result: 'Error', steps: 'Supported Matrix operations: det2x2(a,b,c,d), inv2x2(a,b,c,d), trans2x2(a,b,c,d), trace2x2(a,b,c,d), add2x2(a..h), mul2x2(a..h)' };
 }
 
 // ================= COMPLEX NUMBERS =================
-function evaluateComplex(expr) {
-    var parseComplex = function(str) {
-        str = str.replace(/\s/g, '');
-        var mm = str.match(/^(-?\d+(?:\.\d+)?)?([+-]\d+(?:\.\d+)?)?i$/);
-        if (mm) return { re: mm[1] ? parseFloat(mm[1]) : 0, im: mm[2] ? parseFloat(mm[2]) : 1 };
-        var num = parseFloat(str);
-        if (!isNaN(num)) return { re: num, im: 0 };
-        return null;
-    };
+function parseComplex(str) {
+    str = str.replace(/\s+/g, '').replace(/^\(/, '').replace(/\)$/, '');
+    if (!str) return null;
+    var mPureI = str.match(/^([+-]?\d*(?:\.\d+)?)i$/i);
+    if (mPureI) {
+        var s = mPureI[1];
+        var val = (s === '' || s === '+') ? 1 : (s === '-' ? -1 : parseFloat(s));
+        return { re: 0, im: val };
+    }
+    var mFull = str.match(/^([+-]?\d+(?:\.\d+)?)([+-]\d*(?:\.\d+)?)i$/i);
+    if (mFull) {
+        var re = parseFloat(mFull[1]);
+        var imStr = mFull[2];
+        var im = (imStr === '+' || imStr === '') ? 1 : (imStr === '-' ? -1 : parseFloat(imStr));
+        return { re: re, im: im };
+    }
+    var num = parseFloat(str);
+    if (!isNaN(num)) return { re: num, im: 0 };
+    return null;
+}
 
-    var lower = expr.toLowerCase();
+function evaluateComplex(expr) {
+    var raw = expr.trim();
+    var lower = raw.toLowerCase();
+
+    // Check unary functions: re(z), im(z), conj(z), abs(z), arg(z), polar(z)
     var fn = lower.match(/^(re|im|conj|abs|arg|polar)\((.+)\)$/);
     if (fn) {
         var c = parseComplex(fn[2]);
@@ -1430,6 +1749,77 @@ function evaluateComplex(expr) {
             return { result: magP.toFixed(3) + '∠' + (angP * 180 / Math.PI).toFixed(1) + '°', steps: label + '\n<strong>Polar Form (r e<sup>iθ</sup>):</strong>\nr = |z| = ' + magP.toFixed(4) + '\nθ = ' + angP.toFixed(4) + ' rad\nPolar Representation: <strong>' + magP.toFixed(4) + ' · e<sup>' + angP.toFixed(4) + 'i</sup></strong>' };
         }
     }
+
+    // Check complex binary arithmetic: (z1) OP (z2)
+    var binMatch = raw.match(/^\s*\(?([^()]+?)\)?\s*([*\/+\-])\s*\(?([^()]+?)\)?\s*$/);
+    if (binMatch && (binMatch[1].includes('i') || binMatch[3].includes('i'))) {
+        var z1 = parseComplex(binMatch[1]);
+        var op = binMatch[2];
+        var z2 = parseComplex(binMatch[3]);
+        if (z1 && z2) {
+            var a = z1.re, b = z1.im, c2 = z2.re, d = z2.im;
+            var stepsOp = [];
+            var sign1 = b >= 0 ? '+' : '-';
+            var sign2 = d >= 0 ? '+' : '-';
+            stepsOp.push('<strong>Complex Arithmetic:</strong> (' + a + ' ' + sign1 + ' ' + Math.abs(b) + 'i) ' + op + ' (' + c2 + ' ' + sign2 + ' ' + Math.abs(d) + 'i)');
+
+            if (op === '+') {
+                var sumRe = a + c2;
+                var sumIm = b + d;
+                stepsOp.push('Step 1 (Add Real Parts): ' + a + ' + ' + c2 + ' = <strong>' + sumRe + '</strong>');
+                stepsOp.push('Step 2 (Add Imaginary Parts): (' + b + ' + ' + d + ')i = <strong>' + sumIm + 'i</strong>');
+                var resSum = sumRe + ' ' + (sumIm >= 0 ? '+' : '-') + ' ' + Math.abs(sumIm) + 'i';
+                stepsOp.push('Sum = <strong>' + resSum + '</strong>');
+                return { result: resSum, steps: stepsOp.join('\n') };
+            }
+            if (op === '-') {
+                var diffRe = a - c2;
+                var diffIm = b - d;
+                stepsOp.push('Step 1 (Subtract Real Parts): ' + a + ' − (' + c2 + ') = <strong>' + diffRe + '</strong>');
+                stepsOp.push('Step 2 (Subtract Imaginary Parts): (' + b + ' − (' + d + '))i = <strong>' + diffIm + 'i</strong>');
+                var resDiff = diffRe + ' ' + (diffIm >= 0 ? '+' : '-') + ' ' + Math.abs(diffIm) + 'i';
+                stepsOp.push('Difference = <strong>' + resDiff + '</strong>');
+                return { result: resDiff, steps: stepsOp.join('\n') };
+            }
+            if (op === '*') {
+                stepsOp.push('Apply FOIL Method: (a + bi)(c + di) = ac + adi + bci + bdi²');
+                var ac = a * c2, ad = a * d, bc = b * c2, bd = b * d;
+                stepsOp.push('Step 1 (First terms): ' + a + ' × ' + c2 + ' = ' + ac);
+                stepsOp.push('Step 2 (Outside terms): ' + a + ' × ' + d + 'i = ' + ad + 'i');
+                stepsOp.push('Step 3 (Inside terms): ' + b + 'i × ' + c2 + ' = ' + bc + 'i');
+                stepsOp.push('Step 4 (Last terms): ' + b + 'i × ' + d + 'i = ' + bd + 'i² = ' + bd + ' × (-1) = ' + (-bd));
+                var realPart = ac - bd;
+                var imagPart = ad + bc;
+                stepsOp.push('Step 5 (Combine Real parts): ' + ac + ' + (' + (-bd) + ') = <strong>' + realPart + '</strong>');
+                stepsOp.push('Step 6 (Combine Imaginary parts): (' + ad + ' + ' + bc + ')i = <strong>' + imagPart + 'i</strong>');
+                var resMul = realPart + ' ' + (imagPart >= 0 ? '+' : '-') + ' ' + Math.abs(imagPart) + 'i';
+                stepsOp.push('Product = <strong>' + resMul + '</strong>');
+                return { result: resMul, steps: stepsOp.join('\n') };
+            }
+            if (op === '/') {
+                var den = (c2 * c2) + (d * d);
+                if (den === 0) {
+                    stepsOp.push('Error: Denominator is 0. Division by zero is undefined.');
+                    return { result: 'Undefined', steps: stepsOp.join('\n') };
+                }
+                stepsOp.push('Step 1: Identify complex conjugate of denominator: (' + c2 + ' ' + (d >= 0 ? '−' : '+') + ' ' + Math.abs(d) + 'i)');
+                stepsOp.push('Step 2: Multiply numerator and denominator by conjugate.');
+                stepsOp.push('Step 3 (Denominator c² + d²): (' + c2 + ')² + (' + d + ')² = ' + (c2*c2) + ' + ' + (d*d) + ' = <strong>' + den + '</strong>');
+                var numRe = (a * c2) + (b * d);
+                var numIm = (b * c2) - (a * d);
+                stepsOp.push('Step 4 (Numerator Product): (' + a + ' + ' + b + 'i)(' + c2 + ' − ' + d + 'i) = ' + numRe + ' + ' + numIm + 'i');
+                var reAns = numRe / den;
+                var imAns = numIm / den;
+                var reStr = Number.isInteger(reAns) ? reAns : reAns.toFixed(4);
+                var imStr = Number.isInteger(imAns) ? imAns : imAns.toFixed(4);
+                var resDiv = reStr + ' ' + (imAns >= 0 ? '+' : '-') + ' ' + Math.abs(imAns) + 'i';
+                stepsOp.push('Step 5 (Divide components): (' + numRe + ' / ' + den + ') + (' + numIm + ' / ' + den + ')i');
+                stepsOp.push('Quotient = <strong>' + resDiv + '</strong>');
+                return { result: resDiv, steps: stepsOp.join('\n') };
+            }
+        }
+    }
+
     return evaluateUniversal(expr);
 }
 
