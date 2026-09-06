@@ -62,115 +62,60 @@
             </div>
             <div class="marvel-sub-line right" aria-hidden="true"></div>
         </div>
-
-        <!-- Tap or Skip Pill -->
-        <button class="splash-skip-pill" id="splashSkipBtn" aria-label="Skip intro animation">SKIP</button>
     </div>
 </div>
 
-<!-- Native Mobile Phone Enclosure -->
-<div class="mobile-device-wrapper" id="mobileDeviceWrapper">
-    <div class="phone-frame" id="phoneFrame">
-        <!-- Top Speaker & Camera Dynamic Notch (for desktop preview) -->
-        <div class="phone-notch-bar" aria-hidden="true">
-            <div class="phone-dynamic-island">
-                <span class="island-camera"></span>
-                <span class="island-sensor"></span>
-            </div>
+<div class="app-container" id="appContainer">
+    <!-- Top Navigation Bar -->
+    <header class="top-bar" id="mainTopBar">
+        <button class="menu-btn icon-btn" id="menuToggleBtn" aria-label="Open menu" title="Calculator Modes & Settings">
+            <svg class="svg-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+
+        <div class="title-wrap" id="headerTitleWrap">
+            <div class="title" id="appTitle">UNIVERSAL CS CALCULATOR</div>
+            <div id="branchIndicator" class="branch-indicator">Universal (Scientific)</div>
         </div>
 
-        <!-- Mobile Status Bar (Time & Connectivity) -->
-        <div class="phone-status-bar" id="phoneStatusBar">
-            <span class="status-time" id="mobileStatusClock">9:41</span>
-            <div class="status-icons">
-                <svg class="status-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-                    <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L12 22l7.03-4.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z"/>
+        <div class="top-actions">
+            <button class="menu-btn icon-btn" id="keyboardToggleBtn" aria-label="Toggle keyboard" title="Toggle physical/virtual input">
+                <svg class="svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                    <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"></path>
                 </svg>
-                <svg class="status-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-                    <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.66-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
-                </svg>
-                <div class="battery-indicator" title="Battery: 100%">
-                    <div class="battery-fill"></div>
-                </div>
-            </div>
+            </button>
+            <button class="menu-btn text-btn" id="ansToggleBtn" aria-label="Insert last answer" title="Insert last computed answer (ANS)">
+                <span class="ans-label">ANS</span>
+            </button>
         </div>
+    </header>
 
-        <div class="app-container" id="appContainer">
-            <!-- Top Navigation Bar -->
-            <header class="top-bar" id="mainTopBar">
-                <button class="menu-btn icon-btn" id="menuToggleBtn" aria-label="Open menu" title="Calculator Modes & Settings">
-                    <svg class="svg-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
-                </button>
-
-                <div class="title-wrap" id="headerTitleWrap">
-                    <div class="title" id="appTitle">UNIVERSAL CS CALCULATOR</div>
-                    <div id="branchIndicator" class="branch-indicator">Universal (Scientific)</div>
-                </div>
-
-                <div class="top-actions">
-                    <button class="menu-btn icon-btn" id="viewStepsBtn" aria-label="View step-by-step working" title="Inspect step-by-step evaluation">
-                        <svg class="svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line>
-                            <line x1="16" y1="17" x2="8" y2="17"></line>
+    <!-- Main Workspace Layout -->
+    <main class="main-workspace" id="mainWorkspace">
+        <!-- Calculator Interactive View -->
+        <section id="calculatorView" class="calculator-view" aria-label="Calculator Interactive Area">
+            <div class="display-area" id="displayArea">
+                <div class="expression-input-card">
+                    <label for="exprInput" class="sr-only">Mathematical Expression Input</label>
+                    <input type="text" id="exprInput" placeholder="Enter expression or select function…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="none">
+                    <button class="input-clear-mini" id="inputClearMiniBtn" title="Clear expression" aria-label="Clear expression">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
                     </button>
-                    <button class="menu-btn text-btn" id="ansToggleBtn" aria-label="Insert last answer" title="Insert last computed answer (ANS)">
-                        <span class="ans-label">ANS</span>
-                    </button>
                 </div>
-            </header>
 
-            <!-- Horizontal Swipeable Mobile Branch Chips -->
-            <nav class="mobile-branch-bar" id="mobileBranchBar" aria-label="Calculator Modes">
-                <div class="mobile-branch-scroll" id="mobileBranchScroll">
-                    <button class="branch-chip active" data-branch="universal">Universal</button>
-                    <button class="branch-chip" data-branch="arithmetic">Arithmetic &amp; Bitwise</button>
-                    <button class="branch-chip" data-branch="combinatorics">Combinatorics</button>
-                    <button class="branch-chip" data-branch="logic">Logic &amp; Boolean</button>
-                    <button class="branch-chip" data-branch="settheory">Set Theory</button>
-                    <button class="branch-chip" data-branch="numbertheory">Number Theory</button>
-                    <button class="branch-chip" data-branch="conversion">Base Conversion</button>
-                    <button class="branch-chip" data-branch="matrix">Matrix (2×2)</button>
-                    <button class="branch-chip" data-branch="complex">Complex Numbers</button>
+                <div class="result-box" id="resultBox" title="Result (Tap to view step-by-step breakdown)" tabindex="0" role="region" aria-live="polite">
+                    <span class="result-label" aria-hidden="true">=</span>
+                    <span id="resultDisplay" class="result-value">0</span>
                 </div>
-            </nav>
-
-            <!-- Main Workspace Layout -->
-            <main class="main-workspace" id="mainWorkspace">
-                <!-- Calculator Interactive View -->
-                <section id="calculatorView" class="calculator-view" aria-label="Calculator Interactive Area">
-                    <div class="display-area" id="displayArea">
-                        <div class="expression-input-card">
-                            <label for="exprInput" class="sr-only">Mathematical Expression Input</label>
-                            <input type="text" id="exprInput" placeholder="Enter expression or select function…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="none">
-                            <button class="input-clear-mini" id="inputClearMiniBtn" title="Clear expression" aria-label="Clear expression">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="result-box-container">
-                            <div class="result-box" id="resultBox" title="Result (Tap to copy or view steps)" tabindex="0" role="region" aria-live="polite">
-                                <span class="result-label" aria-hidden="true">=</span>
-                                <span id="resultDisplay" class="result-value">0</span>
-                            </div>
-                            <button class="steps-chip-btn" id="stepsChipBtn" title="View step-by-step working">
-                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                                <span>STEPS</span>
-                            </button>
-                        </div>
-                        <div id="fallbackMessage" class="fallback-message" style="display: none;"></div>
-                    </div>
+                <div id="fallbackMessage" class="fallback-message" style="display: none;"></div>
+            </div>
 
                     <!-- Buttons Panel -->
                     <div class="buttons-panel" id="buttonsPanel">
@@ -253,13 +198,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Mobile Home Indicator (at bottom of frame) -->
-        <div class="phone-home-indicator" aria-hidden="true">
-            <span class="home-bar"></span>
-        </div>
-    </div>
-</div>
 
 <!-- Drawer Navigation Menu -->
 <div id="drawer" class="drawer" aria-hidden="true">

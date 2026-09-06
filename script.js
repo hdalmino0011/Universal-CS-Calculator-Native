@@ -637,19 +637,6 @@ function switchBranch(branch) {
         }
     }
 
-    // Update mobile branch chips
-    var allChips = document.querySelectorAll('.branch-chip');
-    for (var c = 0; c < allChips.length; c++) {
-        if (allChips[c].getAttribute('data-branch') === branch) {
-            allChips[c].classList.add('active');
-            try {
-                allChips[c].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            } catch(e) {}
-        } else {
-            allChips[c].classList.remove('active');
-        }
-    }
-
     if (fallbackMessage) fallbackMessage.style.display = 'none';
 }
 
@@ -1613,7 +1600,6 @@ function initSplashScreen() {
     var splash = document.getElementById('splashScreen');
     if (!splash) return;
 
-    var skipBtn = document.getElementById('splashSkipBtn');
     var isDismissed = false;
 
     function dismiss() {
@@ -1627,43 +1613,15 @@ function initSplashScreen() {
         }, 520);
     }
 
-    if (skipBtn) {
-        skipBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            dismiss();
-        });
-    }
-
-    splash.addEventListener('click', function() {
-        dismiss();
-    });
-
-    // 3.5 seconds display with smooth fadeout
+    // Displays iconic HDDev Marvel intro and stays for 3.5 seconds then smoothly fades out
     setTimeout(function() {
         dismiss();
     }, 3500);
 }
 
-// ================= MOBILE PHONE STATUS BAR =================
-function initMobileStatusBar() {
-    var timeEl = document.getElementById('statusTime');
-    if (!timeEl) return;
-    function updateTime() {
-        var now = new Date();
-        var hours = now.getHours();
-        var minutes = now.getMinutes();
-        var displayHours = hours % 12 || 12;
-        var displayMinutes = minutes < 10 ? '0' + minutes : minutes;
-        timeEl.textContent = displayHours + ':' + displayMinutes;
-    }
-    updateTime();
-    setInterval(updateTime, 30000);
-}
-
 // ================= INITIALIZATION =================
 function init() {
     initSplashScreen();
-    initMobileStatusBar();
     loadHistory();
     initTheme();
     initFont();
@@ -1671,29 +1629,10 @@ function init() {
     updateBranchIndicator();
     renderButtons();
 
-    // Mobile branch chips
-    var branchChips = document.querySelectorAll('.branch-chip');
-    for (var b = 0; b < branchChips.length; b++) {
-        branchChips[b].addEventListener('click', function() {
-            buzz();
-            var branch = this.getAttribute('data-branch');
-            switchBranch(branch);
-        });
-    }
-
     // Steps view buttons and result box
     var resultBox = document.getElementById('resultBox');
     if (resultBox) {
         resultBox.addEventListener('click', function() {
-            buzz();
-            openStepsView();
-        });
-    }
-
-    var stepsChipBtn = document.getElementById('stepsChipBtn');
-    if (stepsChipBtn) {
-        stepsChipBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
             buzz();
             openStepsView();
         });
