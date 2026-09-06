@@ -1,0 +1,2 @@
+rootProject.name = "UniversalCSCalculator"
+include ':app'
