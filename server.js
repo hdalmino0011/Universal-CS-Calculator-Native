@@ -28,6 +28,10 @@ function getGenAIClient() {
   });
 }
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 app.post('/api/trace-code', async (req, res) => {
   try {
     const { code, language = 'auto', customInput = '' } = req.body;
@@ -37,10 +41,7 @@ app.post('/api/trace-code', async (req, res) => {
 
     const ai = getGenAIClient();
     if (!ai) {
-      return res.status(503).json({
-        error: 'AI tracer is not configured on this server (GEMINI_API_KEY missing). Falling back to client emulator.',
-        fallback: true
-      });
+      return res.json({ fallback: true });
     }
 
     const systemPrompt = `You are a high-precision, universal code execution simulator, tracer, and DSA (Data Structures & Algorithms) debugger.
@@ -95,31 +96,31 @@ Rules:
 
     const userPrompt = `Language: ${language}\nCustom Input / Arguments: ${customInput || 'None'}\n\nCode to trace:\n\`\`\`\n${code}\n\`\`\``;
 
-    let response;
-    try {
-      response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
-        contents: userPrompt,
-        config: {
-          systemInstruction: systemPrompt,
-          responseMimeType: 'application/json',
-          temperature: 0.2
-        }
-      });
-    } catch (primaryErr) {
-      console.warn('Primary model error, attempting gemini-flash-latest:', primaryErr.message);
-      response = await ai.models.generateContent({
-        model: 'gemini-flash-latest',
-        contents: userPrompt,
-        config: {
-          systemInstruction: systemPrompt,
-          responseMimeType: 'application/json',
-          temperature: 0.2
-        }
-      });
+    const candidateModels = ['gemini-flash-latest', 'gemini-3.8-flash'];
+    let response = null;
+
+    for (const modelName of candidateModels) {
+      try {
+        response = await ai.models.generateContent({
+          model: modelName,
+          contents: userPrompt,
+          config: {
+            systemInstruction: systemPrompt,
+            responseMimeType: 'application/json',
+            temperature: 0.2
+          }
+        });
+        if (response && response.text) break;
+      } catch (mErr) {
+        console.warn(`Model ${modelName} trace failed:`, mErr.message);
+      }
     }
 
-    const responseText = response.text ? response.text.trim() : '';
+    if (!response || !response.text) {
+      return res.json({ fallback: true });
+    }
+
+    const responseText = response.text.trim();
     let parsed;
     try {
       parsed = JSON.parse(responseText);
@@ -130,11 +131,8 @@ Rules:
 
     return res.json(parsed);
   } catch (err) {
-    console.error('Error in /api/trace-code:', err);
-    return res.status(500).json({
-      error: 'Failed to generate code trace: ' + (err.message || 'Unknown error'),
-      fallback: true
-    });
+    console.warn('Trace endpoint error, returning client fallback flag:', err.message);
+    return res.json({ fallback: true });
   }
 });
 

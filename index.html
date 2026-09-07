@@ -86,6 +86,9 @@
                     <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M8 16h8"></path>
                 </svg>
             </button>
+            <button class="menu-btn text-btn" id="codeTracerToggleBtn" aria-label="Toggle Code Tracer" title="Switch between Calculator and Code Tracer &amp; DSA Visualizer">
+                <span class="ans-label" id="tracerToggleLabel">DSA TRACER</span>
+            </button>
             <button class="menu-btn text-btn" id="ansToggleBtn" aria-label="Insert last answer" title="Insert last computed answer (ANS)">
                 <span class="ans-label">ANS</span>
             </button>
@@ -218,6 +221,7 @@
                                 <div class="gutter-line-num">1</div>
                             </div>
                             <div class="tracer-code-editor-container" id="tracerEditorContainer">
+                                <pre id="tracerCodeHighlight" class="code-highlight-layer" aria-hidden="true"><code id="tracerCodeHighlightContent"></code></pre>
                                 <textarea id="tracerCodeInput" class="code-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Write your code here...&#10;&#10;// Type or paste any code in Python, C++, Java, JS, Rust, C...&#10;// Code stays permanently wrapped with line numbers and soft wrap.&#10;// Tap 'TRACE &amp; EXECUTE CODE' below to step through execution!"></textarea>
                             </div>
                         </div>

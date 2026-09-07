@@ -2016,9 +2016,9 @@ button:focus-visible, input:focus-visible {
     background: #181818 !important;
     border-right: 1px solid #333333 !important;
     color: #858585 !important;
-    font-family: var(--font-mono);
-    font-size: 0.82rem;
-    line-height: 1.6;
+    font-family: var(--font-mono) !important;
+    font-size: 13.5px;
+    line-height: 22px;
     text-align: right;
     user-select: none;
     overflow: hidden;
@@ -2027,9 +2027,9 @@ button:focus-visible, input:focus-visible {
 }
 
 .gutter-line-num {
-    height: auto;
-    min-height: 1.6em;
-    line-height: 1.6;
+    height: 22px;
+    line-height: 22px;
+    font-size: 13.5px;
     padding-right: 8px;
     box-sizing: border-box;
 }
@@ -2043,32 +2043,83 @@ button:focus-visible, input:focus-visible {
     background: #1e1e1e !important;
 }
 
-/* FOREGROUND EDITABLE TEXTAREA: 100% VISIBLE, CRISP, CLEAN, HIGH-CONTRAST, PERMANENTLY WRAPPED */
-.code-textarea {
+/* BACKGROUND SYNTAX HIGHLIGHT LAYER (VS Code Dark+ Tokens) */
+.code-highlight-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     height: 100%;
     margin: 0;
     padding: 10px 14px;
     box-sizing: border-box;
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    line-height: 1.6;
-    tab-size: 4;
-    white-space: pre-wrap !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
+    font-family: var(--font-mono) !important;
+    font-size: 13.5px !important;
+    line-height: 22px !important;
+    letter-spacing: 0px !important;
+    tab-size: 4 !important;
+    white-space: pre !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    color: #d4d4d4;
+    background: transparent;
+    z-index: 1;
+}
+
+.code-highlight-layer code {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    letter-spacing: inherit !important;
+    white-space: inherit !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    color: inherit !important;
+}
+
+/* FOREGROUND EDITABLE TEXTAREA: Native editing with VS Code syntax colors shining through */
+.code-textarea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 10px 14px;
+    box-sizing: border-box;
+    font-family: var(--font-mono) !important;
+    font-size: 13.5px !important;
+    line-height: 22px !important;
+    letter-spacing: 0px !important;
+    tab-size: 4 !important;
+    white-space: pre !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
     overflow-y: scroll;
-    overflow-x: hidden;
+    overflow-x: auto;
     resize: none;
     border: none;
     outline: none;
-    background: #1e1e1e !important;
-    color: #d4d4d4 !important; /* Official VS Code Dark+ text color: crisp, 100% visible, NEVER transparent! */
+    background: transparent !important;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
     caret-color: #569cd6 !important; /* VS Code vibrant blue caret */
+    z-index: 2;
 }
 
 .code-textarea::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
 }
 
 .code-textarea::-webkit-scrollbar-track {
@@ -2085,17 +2136,23 @@ button:focus-visible, input:focus-visible {
 }
 
 .code-textarea::selection {
-    background: #264f78 !important; /* VS Code standard blue selection */
-    color: #ffffff !important;
+    background: rgba(38, 79, 120, 0.75) !important; /* VS Code blue selection */
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+}
+
+.code-textarea:placeholder-shown {
+    color: #6a9955 !important; /* VS Code comment olive green */
+    -webkit-text-fill-color: #6a9955 !important;
 }
 
 .code-textarea::placeholder {
     color: #6a9955 !important; /* VS Code comment olive green */
+    -webkit-text-fill-color: #6a9955 !important;
     font-style: italic;
     opacity: 0.85;
-    line-height: 1.6;
-    white-space: pre-wrap !important;
-    word-break: break-word !important;
+    line-height: 22px;
+    white-space: pre !important;
 }
 
 /* ================= VS CODE DARK+ SYNTAX COLORS ================= */
@@ -2684,6 +2741,163 @@ button:focus-visible, input:focus-visible {
     font-size: 0.65rem;
     font-family: var(--font-mono);
     color: var(--text-muted);
+}
+
+/* DSA Stack Visualization */
+.dsa-stack-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    max-width: 300px;
+    margin: 8px auto;
+    padding: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.dsa-stack-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.dsa-stack-items-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 6px;
+    padding: 8px;
+    border-left: 3px solid var(--accent);
+    border-right: 3px solid var(--accent);
+    border-bottom: 4px solid var(--accent);
+    border-radius: 0 0 6px 6px;
+    background: var(--bg-display);
+    min-height: 80px;
+    justify-content: flex-start;
+}
+
+.dsa-stack-item {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-highlight);
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    box-sizing: border-box;
+}
+
+.dsa-stack-item.top-item {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.18);
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
+}
+
+/* DSA Linked List Visualization */
+.dsa-ll-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.dsa-ll-chain {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 0;
+}
+
+.dsa-ll-node-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.dsa-ll-node {
+    padding: 8px 14px;
+    background: var(--bg-display);
+    border: 2px solid var(--border-highlight);
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.dsa-ll-node.active-node {
+    border-color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    background: rgba(56, 189, 248, 0.15);
+}
+
+.dsa-ll-arrow {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--accent-2);
+    margin: 0 2px;
+}
+
+/* DSA Bitwise Visualization */
+.dsa-bits-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.dsa-bits-row {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.dsa-bit-cell {
+    width: 36px;
+    height: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-display);
+    border: 1px solid var(--border-highlight);
+    border-radius: 6px;
+    font-family: var(--font-mono);
+}
+
+.dsa-bit-val {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.dsa-bit-pos {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+}
+
+.dsa-bit-cell.bit-active {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.2);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+}
+
+.dsa-bit-cell.bit-cleared {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.18);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
 }
 
 .stack-view-container {
