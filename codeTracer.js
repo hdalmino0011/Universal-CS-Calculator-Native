@@ -100,6 +100,7 @@
     // Viewer
     var codeViewerLines = document.getElementById('tracerCodeViewerLines');
     var activeLineIndicator = document.getElementById('activeLineIndicator');
+    var codeHighlight = document.getElementById('tracerCodeHighlight');
 
     // Meta chips
     var metaTitle = document.getElementById('tracerAlgorithmTitle');
@@ -183,6 +184,19 @@
         return result;
     }
 
+    // Keep a highlighted mirror behind the editable textarea. Native textareas
+    // cannot style individual tokens, so the mirror provides VS Code colors
+    // while the textarea remains the single source of truth for editing.
+    function updateSyntaxHighlight() {
+        if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
+        if (!codeHighlight) codeHighlight = document.getElementById('tracerCodeHighlight');
+        if (!codeInput || !codeHighlight) return;
+
+        var lang = langSelect ? langSelect.value : 'auto';
+        codeHighlight.innerHTML = highlightCodeSyntax(codeInput.value, lang) || '&nbsp;';
+        syncScroll();
+    }
+
     // Update Line Numbers Gutter (Always Wrapped, Always Synchronized)
     function updateGutter() {
         if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
@@ -204,14 +218,20 @@
     function syncScroll() {
         if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
         if (!lineGutter) lineGutter = document.getElementById('tracerLineGutter');
+        if (!codeHighlight) codeHighlight = document.getElementById('tracerCodeHighlight');
         if (lineGutter && codeInput) {
             lineGutter.scrollTop = codeInput.scrollTop;
+        }
+        if (codeHighlight && codeInput) {
+            codeHighlight.scrollTop = codeInput.scrollTop;
+            codeHighlight.scrollLeft = codeInput.scrollLeft;
         }
     }
 
     // Refresh when code changes
     function onCodeInputChanged() {
         updateGutter();
+        updateSyntaxHighlight();
     }
 
     // Load Preset
@@ -1182,7 +1202,21 @@
         if (resultsContainer) resultsContainer.style.display = 'none';
         stopPlay();
 
-        // Perform server-side deep execution trace via Gemini API
+        // GitHub Pages and the Android WebView do not have a server endpoint.
+        // Run the reliable offline tracer immediately there instead of waiting
+        // for a failing fetch to resolve.
+        var isOfflineHost = !window.location ||
+            window.location.protocol === 'file:' ||
+            /(^|\.)github\.io$/i.test(window.location.hostname || '');
+        if (isOfflineHost) {
+            renderTraceResults(simulateClientSideTrace(code, lang, customInput), code);
+            if (runBtn) runBtn.disabled = false;
+            if (loadingBox) loadingBox.style.display = 'none';
+            return;
+        }
+
+        // Perform server-side deep execution trace via the optional
+        // Express/Gemini backend when the app is hosted with one.
         fetch('/api/trace-code', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1193,6 +1227,9 @@
             })
         })
         .then(function(res) {
+            if (!res.ok) {
+                throw new Error('Trace endpoint returned HTTP ' + res.status);
+            }
             return res.json();
         })
         .then(function(data) {
@@ -1217,6 +1254,8 @@
 
     // Render Full Trace Results
     function renderTraceResults(data, sourceCode) {
+        data = data || {};
+        data.code = sourceCode;
         tracerState.traceData = data;
         tracerState.code = sourceCode;
 
@@ -1302,9 +1341,10 @@
 
             if (langSelect) {
                 langSelect.addEventListener('change', function() {
+                    updateSyntaxHighlight();
                     // Update if results are visible
                     if (tracerState.traceData && codeViewerLines) {
-                        setupCodeViewer(tracerState.traceData.code || (codeInput ? codeInput.value : ''));
+                        setupCodeViewer(tracerState.code || (codeInput ? codeInput.value : ''));
                     }
                 });
             }
@@ -1329,8 +1369,7 @@
                 clearBtn.addEventListener('click', function() {
                     if (codeInput) codeInput.value = '';
                     if (customInputEl) customInputEl.value = '';
-                    updateGutter();
-                    syncScroll();
+                    onCodeInputChanged();
                     if (resultsContainer) resultsContainer.style.display = 'none';
                     stopPlay();
                     if (window.showToast) window.showToast('Code editor cleared.');
