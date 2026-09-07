@@ -214,9 +214,11 @@
                         </div>
 
                         <div class="tracer-editor-box" id="tracerEditorBox">
+                            <div class="line-gutter" id="tracerLineGutter" aria-hidden="true">
+                                <div class="gutter-line-num">1</div>
+                            </div>
                             <div class="tracer-code-editor-container" id="tracerEditorContainer">
-                                <div id="tracerCodeSyntaxOverlay" class="code-syntax-overlay" aria-hidden="true"></div>
-                                <textarea id="tracerCodeInput" class="code-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Write your code here...&#10;&#10;// Type or paste any code in Python, C++, Java, JS, Rust, C...&#10;// Code stays permanently wrapped with real-time VS Code syntax colors.&#10;// Tap 'TRACE &amp; EXECUTE' below to step through execution!"></textarea>
+                                <textarea id="tracerCodeInput" class="code-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" placeholder="Write your code here...&#10;&#10;// Type or paste any code in Python, C++, Java, JS, Rust, C...&#10;// Code stays permanently wrapped with line numbers and soft wrap.&#10;// Tap 'TRACE &amp; EXECUTE CODE' below to step through execution!"></textarea>
                             </div>
                         </div>
 

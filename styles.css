@@ -2008,94 +2008,47 @@ button:focus-visible, input:focus-visible {
     border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
+.line-gutter {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    padding: 10px 0;
+    background: #181818 !important;
+    border-right: 1px solid #333333 !important;
+    color: #858585 !important;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    text-align: right;
+    user-select: none;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+
+.gutter-line-num {
+    height: auto;
+    min-height: 1.6em;
+    line-height: 1.6;
+    padding-right: 8px;
+    box-sizing: border-box;
+}
+
 .tracer-code-editor-container {
     position: relative;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     height: 100%;
     overflow: hidden;
     background: #1e1e1e !important;
 }
 
-/* REAL-TIME SYNTAX OVERLAY (ALWAYS VS CODE DARK+ COLORS, PERMANENTLY WRAPPED) */
-.code-syntax-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 10px 14px 10px 0;
-    box-sizing: border-box;
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    line-height: 1.6;
-    tab-size: 4;
-    background: #1e1e1e !important;
-    color: #d4d4d4 !important;
-    pointer-events: none;
-    overflow-y: scroll;
-    overflow-x: hidden;
-    z-index: 1;
-}
-
-.code-syntax-overlay::-webkit-scrollbar {
-    width: 8px;
-}
-
-.code-syntax-overlay::-webkit-scrollbar-thumb {
-    background: transparent;
-}
-
-.syntax-view-line {
-    display: flex;
-    align-items: flex-start;
-    line-height: 1.6;
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    margin: 0;
-    padding: 0;
-    min-height: 1.6em;
-}
-
-.syntax-view-num {
-    display: block;
-    width: 38px;
-    min-width: 38px;
-    max-width: 38px;
-    box-sizing: border-box;
-    padding-right: 8px;
-    margin: 0;
-    text-align: right;
-    color: #858585 !important;
-    border-right: 1px solid #333333;
-    user-select: none;
-    flex-shrink: 0;
-    line-height: 1.6;
-    font-size: 0.82rem;
-}
-
-.syntax-view-code {
-    display: block;
-    flex: 1;
-    min-width: 0;
-    box-sizing: border-box;
-    padding-left: 10px;
-    margin: 0;
-    white-space: pre-wrap !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-    line-height: 1.6;
-}
-
-/* FOREGROUND EDITABLE TEXTAREA (TRANSPARENT TEXT, VISIBLE CARET, ALWAYS WRAPPED) */
+/* FOREGROUND EDITABLE TEXTAREA: 100% VISIBLE, CRISP, CLEAN, HIGH-CONTRAST, PERMANENTLY WRAPPED */
 .code-textarea {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
     margin: 0;
-    padding: 10px 14px 10px 48px; /* 38px line-num + 10px gap */
+    padding: 10px 14px;
     box-sizing: border-box;
     font-family: var(--font-mono);
     font-size: 0.85rem;
@@ -2109,11 +2062,9 @@ button:focus-visible, input:focus-visible {
     resize: none;
     border: none;
     outline: none;
-    background: transparent !important;
-    color: transparent !important;
-    -webkit-text-fill-color: transparent !important;
+    background: #1e1e1e !important;
+    color: #d4d4d4 !important; /* Official VS Code Dark+ text color: crisp, 100% visible, NEVER transparent! */
     caret-color: #569cd6 !important; /* VS Code vibrant blue caret */
-    z-index: 2;
 }
 
 .code-textarea::-webkit-scrollbar {
@@ -2134,14 +2085,12 @@ button:focus-visible, input:focus-visible {
 }
 
 .code-textarea::selection {
-    background: rgba(38, 79, 120, 0.75) !important;
-    color: transparent !important;
-    -webkit-text-fill-color: transparent !important;
+    background: #264f78 !important; /* VS Code standard blue selection */
+    color: #ffffff !important;
 }
 
 .code-textarea::placeholder {
-    color: #6a9955 !important; /* VS Code comment green */
-    -webkit-text-fill-color: #6a9955 !important;
+    color: #6a9955 !important; /* VS Code comment olive green */
     font-style: italic;
     opacity: 0.85;
     line-height: 1.6;

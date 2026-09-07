@@ -76,7 +76,7 @@
 
     // DOM References
     var codeInput = document.getElementById('tracerCodeInput');
-    var codeSyntaxOverlay = document.getElementById('tracerCodeSyntaxOverlay');
+    var lineGutter = document.getElementById('tracerLineGutter');
     var tracerEditorBox = document.getElementById('tracerEditorBox');
     var langSelect = document.getElementById('tracerLangSelect');
     var presetsSelect = document.getElementById('tracerPresetsSelect');
@@ -183,51 +183,35 @@
         return result;
     }
 
-    // Real-Time VS Code Syntax Overlay & Line Numbers (Always Wrapped, Always VS Code Colors)
-    function updateSyntaxOverlay() {
+    // Update Line Numbers Gutter (Always Wrapped, Always Synchronized)
+    function updateGutter() {
         if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
-        if (!codeSyntaxOverlay) codeSyntaxOverlay = document.getElementById('tracerCodeSyntaxOverlay');
-        if (!codeSyntaxOverlay || !codeInput) return;
+        if (!lineGutter) lineGutter = document.getElementById('tracerLineGutter');
+        if (!codeInput || !lineGutter) return;
 
         var text = codeInput.value;
-        var lang = langSelect ? langSelect.value : 'auto';
-
-        if (!text) {
-            codeSyntaxOverlay.innerHTML = '<div class="syntax-view-line">' +
-                '<span class="syntax-view-num">1</span>' +
-                '<span class="syntax-view-code tok-comment">&nbsp;</span>' +
-                '</div>';
-            return;
-        }
-
         var lines = text.split('\n');
+        var count = Math.max(1, lines.length);
+
         var html = '';
-        for (var i = 0; i < lines.length; i++) {
-            var lineNum = i + 1;
-            var lineText = lines[i];
-            var highlighted = highlightCodeSyntax(lineText, lang);
-            if (!highlighted) highlighted = '&nbsp;';
-            html += '<div class="syntax-view-line">' +
-                '<span class="syntax-view-num">' + lineNum + '</span>' +
-                '<span class="syntax-view-code">' + highlighted + '</span>' +
-                '</div>';
+        for (var i = 1; i <= count; i++) {
+            html += '<div class="gutter-line-num">' + i + '</div>';
         }
-        codeSyntaxOverlay.innerHTML = html;
+        lineGutter.innerHTML = html;
+        syncScroll();
     }
 
     function syncScroll() {
         if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
-        if (!codeSyntaxOverlay) codeSyntaxOverlay = document.getElementById('tracerCodeSyntaxOverlay');
-        if (codeSyntaxOverlay && codeInput) {
-            codeSyntaxOverlay.scrollTop = codeInput.scrollTop;
-            codeSyntaxOverlay.scrollLeft = codeInput.scrollLeft;
+        if (!lineGutter) lineGutter = document.getElementById('tracerLineGutter');
+        if (lineGutter && codeInput) {
+            lineGutter.scrollTop = codeInput.scrollTop;
         }
     }
 
     // Refresh when code changes
     function onCodeInputChanged() {
-        updateSyntaxOverlay();
-        syncScroll();
+        updateGutter();
     }
 
     // Load Preset
@@ -237,8 +221,7 @@
         if (codeInput) codeInput.value = preset.code;
         if (langSelect) langSelect.value = preset.lang;
         if (customInputEl) customInputEl.value = preset.customInput || '';
-        updateSyntaxOverlay();
-        syncScroll();
+        updateGutter();
         if (window.showToast) window.showToast('Loaded preset: ' + preset.title);
     }
 
@@ -247,8 +230,7 @@
         if (codeInput && !codeInput.value.trim()) {
             loadPreset('binsearch_cpp');
         } else {
-            updateSyntaxOverlay();
-            syncScroll();
+            updateGutter();
         }
     }
 
@@ -1278,7 +1260,7 @@
     // Initialize Event Listeners
     function init() {
         if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
-        if (!codeSyntaxOverlay) codeSyntaxOverlay = document.getElementById('tracerCodeSyntaxOverlay');
+        if (!lineGutter) lineGutter = document.getElementById('tracerLineGutter');
         if (!tracerEditorBox) tracerEditorBox = document.getElementById('tracerEditorBox');
         if (!langSelect) langSelect = document.getElementById('tracerLangSelect');
         if (!presetsSelect) presetsSelect = document.getElementById('tracerPresetsSelect');
@@ -1320,7 +1302,10 @@
 
             if (langSelect) {
                 langSelect.addEventListener('change', function() {
-                    updateSyntaxOverlay();
+                    // Update if results are visible
+                    if (tracerState.traceData && codeViewerLines) {
+                        setupCodeViewer(tracerState.traceData.code || (codeInput ? codeInput.value : ''));
+                    }
                 });
             }
 
@@ -1344,7 +1329,7 @@
                 clearBtn.addEventListener('click', function() {
                     if (codeInput) codeInput.value = '';
                     if (customInputEl) customInputEl.value = '';
-                    updateSyntaxOverlay();
+                    updateGutter();
                     syncScroll();
                     if (resultsContainer) resultsContainer.style.display = 'none';
                     stopPlay();
