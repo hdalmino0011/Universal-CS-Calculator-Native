@@ -76,13 +76,8 @@
 
     // DOM References
     var codeInput = document.getElementById('tracerCodeInput');
-    var codeSyntaxDisplay = document.getElementById('tracerCodeSyntaxDisplay');
-    var lineGutter = document.getElementById('tracerLineGutter');
+    var codeSyntaxOverlay = document.getElementById('tracerCodeSyntaxOverlay');
     var tracerEditorBox = document.getElementById('tracerEditorBox');
-    var tracerTabEdit = document.getElementById('tracerTabEdit');
-    var tracerTabSyntax = document.getElementById('tracerTabSyntax');
-    var tracerWrapToggleBtn = document.getElementById('tracerWrapToggleBtn');
-    var tracerWrapLabel = document.getElementById('tracerWrapLabel');
     var langSelect = document.getElementById('tracerLangSelect');
     var presetsSelect = document.getElementById('tracerPresetsSelect');
     var customInputEl = document.getElementById('tracerCustomInput');
@@ -188,120 +183,50 @@
         return result;
     }
 
-    // Update Line Numbers Gutter
-    function updateGutter() {
-        if (!codeInput || !lineGutter) return;
-        var text = codeInput.value;
-        var lines = text.split('\n');
-        var count = Math.max(1, lines.length);
-        var gutterHtml = '';
-        for (var i = 1; i <= count; i++) {
-            gutterHtml += '<div class="gutter-line-num">' + i + '</div>';
-        }
-        lineGutter.innerHTML = gutterHtml;
-    }
+    // Real-Time VS Code Syntax Overlay & Line Numbers (Always Wrapped, Always VS Code Colors)
+    function updateSyntaxOverlay() {
+        if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
+        if (!codeSyntaxOverlay) codeSyntaxOverlay = document.getElementById('tracerCodeSyntaxOverlay');
+        if (!codeSyntaxOverlay || !codeInput) return;
 
-    function syncScroll() {
-        if (!codeInput) return;
-        if (lineGutter) {
-            lineGutter.scrollTop = codeInput.scrollTop;
-        }
-    }
-
-    // Render Full Syntax View
-    function renderSyntaxDisplay() {
-        if (!codeSyntaxDisplay) codeSyntaxDisplay = document.getElementById('tracerCodeSyntaxDisplay');
-        if (!codeInput || !codeSyntaxDisplay) return;
         var text = codeInput.value;
-        if (!text.trim()) {
-            codeSyntaxDisplay.innerHTML = '<div class="syntax-view-line"><span class="syntax-view-num">1</span><span class="syntax-view-code tok-comment">// Enter or paste code, or select an algorithm preset above... (Tap to edit)</span></div>';
+        var lang = langSelect ? langSelect.value : 'auto';
+
+        if (!text) {
+            codeSyntaxOverlay.innerHTML = '<div class="syntax-view-line">' +
+                '<span class="syntax-view-num">1</span>' +
+                '<span class="syntax-view-code tok-comment">&nbsp;</span>' +
+                '</div>';
             return;
         }
-        var lang = langSelect ? langSelect.value : 'auto';
+
         var lines = text.split('\n');
         var html = '';
         for (var i = 0; i < lines.length; i++) {
             var lineNum = i + 1;
             var lineText = lines[i];
-            var highlighted = highlightCodeSyntax(lineText, lang) || '&nbsp;';
+            var highlighted = highlightCodeSyntax(lineText, lang);
+            if (!highlighted) highlighted = '&nbsp;';
             html += '<div class="syntax-view-line">' +
                 '<span class="syntax-view-num">' + lineNum + '</span>' +
                 '<span class="syntax-view-code">' + highlighted + '</span>' +
-            '</div>';
+                '</div>';
         }
-        codeSyntaxDisplay.innerHTML = html;
+        codeSyntaxOverlay.innerHTML = html;
     }
 
-    // Switch between Direct Edit & VS Code Colors View
-    function setEditorMode(mode) {
-        currentEditorMode = mode;
-        if (!tracerTabEdit) tracerTabEdit = document.getElementById('tracerTabEdit');
-        if (!tracerTabSyntax) tracerTabSyntax = document.getElementById('tracerTabSyntax');
-        if (!codeSyntaxDisplay) codeSyntaxDisplay = document.getElementById('tracerCodeSyntaxDisplay');
+    function syncScroll() {
         if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
-        if (!lineGutter) lineGutter = document.getElementById('tracerLineGutter');
-
-        if (mode === 'syntax') {
-            if (tracerTabEdit) {
-                tracerTabEdit.classList.remove('active');
-                tracerTabEdit.setAttribute('aria-selected', 'false');
-            }
-            if (tracerTabSyntax) {
-                tracerTabSyntax.classList.add('active');
-                tracerTabSyntax.setAttribute('aria-selected', 'true');
-            }
-            renderSyntaxDisplay();
-            if (codeInput) codeInput.style.display = 'none';
-            if (lineGutter) lineGutter.style.display = 'none'; // syntax view has built-in gutter
-            if (codeSyntaxDisplay) {
-                codeSyntaxDisplay.style.display = 'block';
-                if (codeInput) codeSyntaxDisplay.scrollTop = codeInput.scrollTop;
-            }
-        } else {
-            if (tracerTabSyntax) {
-                tracerTabSyntax.classList.remove('active');
-                tracerTabSyntax.setAttribute('aria-selected', 'false');
-            }
-            if (tracerTabEdit) {
-                tracerTabEdit.classList.add('active');
-                tracerTabEdit.setAttribute('aria-selected', 'true');
-            }
-            if (codeSyntaxDisplay) codeSyntaxDisplay.style.display = 'none';
-            if (lineGutter) lineGutter.style.display = 'block';
-            if (codeInput) {
-                codeInput.style.display = 'block';
-                codeInput.focus();
-            }
-            updateGutter();
-            syncScroll();
-        }
-    }
-
-    // Toggle Soft Word Wrap
-    function toggleWordWrap() {
-        isWordWrapEnabled = !isWordWrapEnabled;
-        if (!tracerEditorBox) tracerEditorBox = document.getElementById('tracerEditorBox');
-        if (!tracerWrapToggleBtn) tracerWrapToggleBtn = document.getElementById('tracerWrapToggleBtn');
-        if (!tracerWrapLabel) tracerWrapLabel = document.getElementById('tracerWrapLabel');
-
-        if (tracerEditorBox) {
-            if (isWordWrapEnabled) {
-                tracerEditorBox.classList.remove('tracer-nowrap');
-            } else {
-                tracerEditorBox.classList.add('tracer-nowrap');
-            }
-        }
-        if (tracerWrapToggleBtn) {
-            tracerWrapToggleBtn.classList.toggle('active', isWordWrapEnabled);
-        }
-        if (tracerWrapLabel) {
-            tracerWrapLabel.textContent = 'WRAP: ' + (isWordWrapEnabled ? 'ON' : 'OFF');
+        if (!codeSyntaxOverlay) codeSyntaxOverlay = document.getElementById('tracerCodeSyntaxOverlay');
+        if (codeSyntaxOverlay && codeInput) {
+            codeSyntaxOverlay.scrollTop = codeInput.scrollTop;
+            codeSyntaxOverlay.scrollLeft = codeInput.scrollLeft;
         }
     }
 
     // Refresh when code changes
     function onCodeInputChanged() {
-        updateGutter();
+        updateSyntaxOverlay();
         syncScroll();
     }
 
@@ -312,10 +237,8 @@
         if (codeInput) codeInput.value = preset.code;
         if (langSelect) langSelect.value = preset.lang;
         if (customInputEl) customInputEl.value = preset.customInput || '';
-        updateGutter();
-        renderSyntaxDisplay();
-        // Activate VS Code colors display so user immediately sees colorized syntax
-        setEditorMode('syntax');
+        updateSyntaxOverlay();
+        syncScroll();
         if (window.showToast) window.showToast('Loaded preset: ' + preset.title);
     }
 
@@ -323,6 +246,9 @@
     function initDefaultPreset() {
         if (codeInput && !codeInput.value.trim()) {
             loadPreset('binsearch_cpp');
+        } else {
+            updateSyntaxOverlay();
+            syncScroll();
         }
     }
 
@@ -1352,12 +1278,8 @@
     // Initialize Event Listeners
     function init() {
         if (!codeInput) codeInput = document.getElementById('tracerCodeInput');
-        if (!codeSyntaxDisplay) codeSyntaxDisplay = document.getElementById('tracerCodeSyntaxDisplay');
-        if (!tracerTabEdit) tracerTabEdit = document.getElementById('tracerTabEdit');
-        if (!tracerTabSyntax) tracerTabSyntax = document.getElementById('tracerTabSyntax');
-        if (!tracerWrapToggleBtn) tracerWrapToggleBtn = document.getElementById('tracerWrapToggleBtn');
-        if (!tracerWrapLabel) tracerWrapLabel = document.getElementById('tracerWrapLabel');
-        if (!lineGutter) lineGutter = document.getElementById('tracerLineGutter');
+        if (!codeSyntaxOverlay) codeSyntaxOverlay = document.getElementById('tracerCodeSyntaxOverlay');
+        if (!tracerEditorBox) tracerEditorBox = document.getElementById('tracerEditorBox');
         if (!langSelect) langSelect = document.getElementById('tracerLangSelect');
         if (!presetsSelect) presetsSelect = document.getElementById('tracerPresetsSelect');
         if (!customInputEl) customInputEl = document.getElementById('tracerCustomInput');
@@ -1382,37 +1304,23 @@
                     setTimeout(onCodeInputChanged, 10);
                 });
                 codeInput.addEventListener('scroll', syncScroll);
-            }
-
-            if (codeSyntaxDisplay) {
-                codeSyntaxDisplay.addEventListener('click', function() {
-                    setEditorMode('edit');
+                codeInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        var start = this.selectionStart;
+                        var end = this.selectionEnd;
+                        this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                        this.selectionStart = this.selectionEnd = start + 4;
+                        onCodeInputChanged();
+                    }
                 });
             }
 
-            if (tracerTabEdit) {
-                tracerTabEdit.addEventListener('click', function() {
-                    setEditorMode('edit');
-                });
-            }
-
-            if (tracerTabSyntax) {
-                tracerTabSyntax.addEventListener('click', function() {
-                    setEditorMode('syntax');
-                });
-            }
-
-            if (tracerWrapToggleBtn) {
-                tracerWrapToggleBtn.addEventListener('click', function() {
-                    toggleWordWrap();
-                });
-            }
+            window.addEventListener('resize', syncScroll);
 
             if (langSelect) {
                 langSelect.addEventListener('change', function() {
-                    if (currentEditorMode === 'syntax') {
-                        renderSyntaxDisplay();
-                    }
+                    updateSyntaxOverlay();
                 });
             }
 
@@ -1436,9 +1344,8 @@
                 clearBtn.addEventListener('click', function() {
                     if (codeInput) codeInput.value = '';
                     if (customInputEl) customInputEl.value = '';
-                    updateGutter();
-                    renderSyntaxDisplay();
-                    setEditorMode('edit');
+                    updateSyntaxOverlay();
+                    syncScroll();
                     if (resultsContainer) resultsContainer.style.display = 'none';
                     stopPlay();
                     if (window.showToast) window.showToast('Code editor cleared.');

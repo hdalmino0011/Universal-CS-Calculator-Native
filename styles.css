@@ -1954,227 +1954,199 @@ button:focus-visible, input:focus-visible {
 
 .tracer-card-header {
     background: var(--bg-panel);
-    padding: 8px 12px;
+    padding: 10px 14px;
     border-bottom: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
-    align-items: center;
-}
-
-.editor-header-title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.5px;
-    color: var(--text-secondary);
-}
-
-.tracer-mode-pill {
-    font-size: 0.62rem;
-    font-weight: 800;
-    letter-spacing: 0.4px;
-    background: var(--accent-subtle);
-    color: var(--accent-light);
-    border: 1px solid var(--accent);
-    padding: 2px 8px;
-    border-radius: 4px;
-}
-
-.tracer-header-controls {
-    display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
 }
 
-.tracer-view-toggle {
-    display: inline-flex;
-    background: rgba(0, 0, 0, 0.45);
-    padding: 2px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-}
-
-.tracer-toggle-btn {
-    display: inline-flex;
+.editor-header-title {
+    display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 9px;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    color: var(--text-muted);
-    background: transparent;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    white-space: nowrap;
-}
-
-.tracer-toggle-btn:hover {
-    color: var(--text-primary);
-}
-
-.tracer-toggle-btn.active {
-    background: var(--accent);
-    color: #ffffff;
-    box-shadow: 0 2px 6px rgba(124, 58, 237, 0.4);
-}
-
-.tracer-wrap-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 8px;
-    font-size: 0.65rem;
+    gap: 8px;
+    font-size: 0.78rem;
     font-weight: 800;
-    font-family: var(--font-mono);
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    background: var(--bg-card);
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    white-space: nowrap;
-}
-
-.tracer-wrap-pill:hover {
-    border-color: var(--border-highlight);
+    letter-spacing: 0.5px;
     color: var(--text-primary);
+    text-transform: uppercase;
 }
 
-.tracer-wrap-pill.active {
-    border-color: #38bdf8;
-    color: #38bdf8;
-    background: rgba(56, 189, 248, 0.12);
+.editor-header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #4ec9b0;
+    background: rgba(78, 201, 176, 0.08);
+    border: 1px solid rgba(78, 201, 176, 0.25);
+    padding: 3px 9px;
+    border-radius: 999px;
+    user-select: none;
+}
+
+.badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4ec9b0;
+    box-shadow: 0 0 6px rgba(78, 201, 176, 0.7);
 }
 
 .tracer-editor-box {
     display: flex;
     min-height: 220px;
-    max-height: 380px;
+    max-height: 420px;
+    height: 320px;
     background: #1e1e1e !important;
     position: relative;
     overflow: hidden;
     border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
-.line-gutter {
-    width: 44px;
-    padding: 10px 8px;
-    background: #181818 !important;
-    border-right: 1px solid #333333 !important;
-    color: #858585 !important;
-    font-family: var(--font-mono);
-    font-size: 0.82rem;
-    line-height: 1.6;
-    text-align: right;
-    user-select: none;
-    overflow: hidden;
-    flex-shrink: 0;
-}
-
-.gutter-line-num {
-    height: auto;
-    min-height: 1.6em;
-}
-
 .tracer-code-editor-container {
     position: relative;
-    flex: 1;
-    min-width: 0;
+    width: 100%;
     height: 100%;
     overflow: hidden;
     background: #1e1e1e !important;
 }
 
-/* EDIT TEXTAREA: 100% VISIBLE, CRISP, CLEAN, HIGH-READABILITY, WRAPPED */
-.code-textarea {
+/* REAL-TIME SYNTAX OVERLAY (ALWAYS VS CODE DARK+ COLORS, PERMANENTLY WRAPPED) */
+.code-syntax-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     margin: 0;
-    padding: 10px 14px;
+    padding: 10px 14px 10px 0;
     box-sizing: border-box;
     font-family: var(--font-mono);
     font-size: 0.85rem;
     line-height: 1.6;
     tab-size: 4;
-    white-space: pre-wrap !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-    overflow-y: auto;
-    resize: none;
-    border: none;
-    outline: none;
-    background: #1e1e1e !important;
-    color: #d4d4d4 !important; /* VS Code default foreground: crisp, readable, never transparent */
-    caret-color: #569cd6 !important; /* VS Code vibrant blue caret */
-}
-
-.code-textarea::placeholder {
-    color: #6a9955 !important; /* VS Code comment olive green */
-    font-style: italic;
-    opacity: 0.9;
-    white-space: pre-wrap !important;
-    word-break: break-word !important;
-}
-
-.code-textarea::selection {
-    background: rgba(38, 79, 120, 0.75) !important;
-    color: #ffffff !important;
-}
-
-/* SYNTAX DISPLAY LAYER (VS CODE DARK+ PALETTE WITH LINE-WRAP) */
-.code-syntax-display {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 10px 14px;
-    box-sizing: border-box;
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    line-height: 1.6;
-    tab-size: 4;
-    overflow-y: auto;
     background: #1e1e1e !important;
     color: #d4d4d4 !important;
-    cursor: text;
+    pointer-events: none;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    z-index: 1;
+}
+
+.code-syntax-overlay::-webkit-scrollbar {
+    width: 8px;
+}
+
+.code-syntax-overlay::-webkit-scrollbar-thumb {
+    background: transparent;
 }
 
 .syntax-view-line {
     display: flex;
     align-items: flex-start;
     line-height: 1.6;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    margin: 0;
+    padding: 0;
+    min-height: 1.6em;
 }
 
 .syntax-view-num {
-    width: 36px;
+    display: block;
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
+    box-sizing: border-box;
+    padding-right: 8px;
+    margin: 0;
     text-align: right;
-    padding-right: 12px;
-    color: #858585;
+    color: #858585 !important;
+    border-right: 1px solid #333333;
     user-select: none;
     flex-shrink: 0;
     line-height: 1.6;
+    font-size: 0.82rem;
 }
 
 .syntax-view-code {
+    display: block;
     flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    padding-left: 10px;
+    margin: 0;
     white-space: pre-wrap !important;
     word-break: break-word !important;
     overflow-wrap: break-word !important;
     line-height: 1.6;
 }
 
-/* NO-WRAP OVERRIDE WHEN USER TURNS OFF WRAP */
-.tracer-editor-box.tracer-nowrap .code-textarea,
-.tracer-editor-box.tracer-nowrap .syntax-view-code,
-.tracer-editor-box.tracer-nowrap .tracer-code-line-text {
-    white-space: pre !important;
-    word-break: normal !important;
-    overflow-wrap: normal !important;
-    overflow-x: auto !important;
+/* FOREGROUND EDITABLE TEXTAREA (TRANSPARENT TEXT, VISIBLE CARET, ALWAYS WRAPPED) */
+.code-textarea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 10px 14px 10px 48px; /* 38px line-num + 10px gap */
+    box-sizing: border-box;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    tab-size: 4;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent !important;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+    caret-color: #569cd6 !important; /* VS Code vibrant blue caret */
+    z-index: 2;
+}
+
+.code-textarea::-webkit-scrollbar {
+    width: 8px;
+}
+
+.code-textarea::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+.code-textarea::-webkit-scrollbar-thumb {
+    background: #424242;
+    border-radius: 4px;
+}
+
+.code-textarea::-webkit-scrollbar-thumb:hover {
+    background: #4f4f4f;
+}
+
+.code-textarea::selection {
+    background: rgba(38, 79, 120, 0.75) !important;
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+}
+
+.code-textarea::placeholder {
+    color: #6a9955 !important; /* VS Code comment green */
+    -webkit-text-fill-color: #6a9955 !important;
+    font-style: italic;
+    opacity: 0.85;
+    line-height: 1.6;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
 }
 
 /* ================= VS CODE DARK+ SYNTAX COLORS ================= */
