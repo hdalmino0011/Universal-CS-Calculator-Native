@@ -260,6 +260,8 @@ function showCalculatorView() {
     stepsView.style.display = 'none';
     fullPageView.style.display = 'none';
     if (codeTracerView) codeTracerView.style.display = 'none';
+    var appCont = document.getElementById('appContainer');
+    if (appCont) appCont.classList.remove('tracer-active-mode');
     updateTracerToggleBtnState(false);
     updateDrawerActiveState(currentBranch);
 }
@@ -269,6 +271,8 @@ function showCodeTracerView() {
     stepsView.style.display = 'none';
     fullPageView.style.display = 'none';
     if (codeTracerView) codeTracerView.style.display = 'flex';
+    var appCont = document.getElementById('appContainer');
+    if (appCont) appCont.classList.add('tracer-active-mode');
     updateTracerToggleBtnState(true);
     updateDrawerActiveState('tracer');
     if (window.initCodeTracer) {

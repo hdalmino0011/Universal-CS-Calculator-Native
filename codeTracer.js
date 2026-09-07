@@ -243,6 +243,15 @@
     function onCodeInputChanged() {
         updateGutter();
         updateSyntaxHighlight();
+        updateCollapsedCodeStats();
+    }
+
+    function updateCollapsedCodeStats() {
+        var collapsedStats = document.getElementById('tracerCollapsedCodeStats');
+        if (!codeInput || !collapsedStats) return;
+        var lines = (codeInput.value || '').split('\n').length;
+        var lang = langSelect ? langSelect.value.toUpperCase() : 'CODE';
+        collapsedStats.textContent = lang + ' (' + lines + ' lines) • Editor minimized (tap to view / edit)';
     }
 
     // Load Preset
@@ -339,7 +348,15 @@
         var activeLineEl = document.getElementById('viewerLine_' + lineNum);
         if (activeLineEl) {
             activeLineEl.classList.add('active');
-            activeLineEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (codeViewerLines) {
+                var lineTop = activeLineEl.offsetTop;
+                var lineH = activeLineEl.offsetHeight;
+                var contScroll = codeViewerLines.scrollTop;
+                var contH = codeViewerLines.clientHeight;
+                if (lineTop < contScroll || (lineTop + lineH) > (contScroll + contH)) {
+                    codeViewerLines.scrollTo({ top: lineTop - (contH / 2) + (lineH / 2), behavior: 'smooth' });
+                }
+            }
         }
         if (activeLineIndicator) {
             activeLineIndicator.textContent = 'Line ' + lineNum;
@@ -353,6 +370,26 @@
             narrativeCodeSnippet.innerHTML = highlightCodeSyntax(step.code || ('Line ' + step.lineNumber), lang);
         }
         if (narrativeExplanationBody) narrativeExplanationBody.innerHTML = escapeHtml(step.explanation || 'Step evaluation');
+
+        // Live snapshot in Tab 1
+        var snapshotChipsEl = document.getElementById('stepSnapshotChips');
+        var snapshotCountEl = document.getElementById('stepSnapshotCount');
+        if (snapshotChipsEl) {
+            snapshotChipsEl.innerHTML = '';
+            if (step.variables && step.variables.length > 0) {
+                if (snapshotCountEl) snapshotCountEl.textContent = step.variables.length + ' active variable' + (step.variables.length > 1 ? 's' : '');
+                for (var sv = 0; sv < step.variables.length; sv++) {
+                    var vSnap = step.variables[sv];
+                    var chip = document.createElement('span');
+                    chip.className = 'step-var-chip' + (vSnap.changed ? ' chip-updated' : '');
+                    chip.innerHTML = '<strong>' + escapeHtml(vSnap.name) + '</strong>=' + escapeHtml(vSnap.value) + (vSnap.changed ? ' <span style="font-size:0.6rem;font-weight:800;">(UPDATED)</span>' : '');
+                    snapshotChipsEl.appendChild(chip);
+                }
+            } else {
+                if (snapshotCountEl) snapshotCountEl.textContent = '0 active';
+                snapshotChipsEl.innerHTML = '<span class="step-empty-chip">No variables active at this step</span>';
+            }
+        }
 
         // 4. Tab 2: Variables Matrix
         if (varsMatrixTableBody) {
@@ -2106,9 +2143,35 @@
         }
 
         // Show Results
+        var tracerView = document.getElementById('codeTracerView');
+        var floatingNav = document.getElementById('tracerFloatingNav');
+        if (floatingNav) floatingNav.style.display = 'flex';
+
+        updateCollapsedCodeStats();
+
+        // On smaller screens or when code is lengthy, auto-collapse editor so results and visualizer are in prime focus
+        if (window.innerWidth < 768 || (sourceCode && sourceCode.split('\n').length > 10)) {
+            var editorCard = document.getElementById('tracerEditorCard');
+            var collapseText = document.getElementById('tracerCollapseToggleText');
+            var collapseIcon = document.getElementById('tracerCollapseToggleIcon');
+            if (editorCard) {
+                editorCard.classList.add('is-collapsed');
+                if (collapseText) collapseText.textContent = 'EXPAND';
+                if (collapseIcon) collapseIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+            }
+        }
+
         if (resultsContainer) {
             resultsContainer.style.display = 'flex';
-            resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(function() {
+                var target = document.getElementById('tracerStepperPanel') || resultsContainer;
+                if (tracerView && target) {
+                    var offset = target.offsetTop - 12;
+                    tracerView.scrollTo({ top: offset > 0 ? offset : 0, behavior: 'smooth' });
+                } else if (resultsContainer.scrollIntoView) {
+                    resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 80);
         }
 
         // Go to Step 0
@@ -2165,6 +2228,7 @@
             if (langSelect) {
                 langSelect.addEventListener('change', function() {
                     updateSyntaxHighlight();
+                    updateCollapsedCodeStats();
                     // Update if results are visible
                     if (tracerState.traceData && codeViewerLines) {
                         setupCodeViewer(tracerState.code || (codeInput ? codeInput.value : ''));
@@ -2194,6 +2258,8 @@
                     if (customInputEl) customInputEl.value = '';
                     onCodeInputChanged();
                     if (resultsContainer) resultsContainer.style.display = 'none';
+                    var floatingNav = document.getElementById('tracerFloatingNav');
+                    if (floatingNav) floatingNav.style.display = 'none';
                     stopPlay();
                     if (window.showToast) window.showToast('Code editor cleared.');
                 });
@@ -2271,6 +2337,82 @@
                     stopPlay();
                     var stepNum = parseInt(this.value, 10);
                     goToStep(stepNum - 1);
+                });
+            }
+
+            // Editor Collapse / Expand toggle
+            var collapseBtn = document.getElementById('tracerCollapseToggleBtn');
+            var editorCard = document.getElementById('tracerEditorCard');
+            var collapseText = document.getElementById('tracerCollapseToggleText');
+            var collapseIcon = document.getElementById('tracerCollapseToggleIcon');
+            var expandMiniBtn = document.getElementById('tracerExpandMiniBtn');
+            var collapsedSummary = document.getElementById('tracerEditorCollapsedSummary');
+
+            function setEditorCollapsed(shouldCollapse) {
+                if (!editorCard) return;
+                if (shouldCollapse) {
+                    editorCard.classList.add('is-collapsed');
+                    if (collapseText) collapseText.textContent = 'EXPAND';
+                    if (collapseIcon) collapseIcon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+                } else {
+                    editorCard.classList.remove('is-collapsed');
+                    if (collapseText) collapseText.textContent = 'COLLAPSE';
+                    if (collapseIcon) collapseIcon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+                    updateGutter();
+                }
+            }
+
+            if (collapseBtn) {
+                collapseBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var isNowCollapsed = editorCard && editorCard.classList.contains('is-collapsed');
+                    setEditorCollapsed(!isNowCollapsed);
+                });
+            }
+
+            if (expandMiniBtn) {
+                expandMiniBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    setEditorCollapsed(false);
+                });
+            }
+
+            if (collapsedSummary) {
+                collapsedSummary.addEventListener('click', function() {
+                    setEditorCollapsed(false);
+                });
+            }
+
+            // Quick Floating Navigation
+            var jumpToCodeBtn = document.getElementById('tracerJumpToCodeBtn');
+            var jumpToVisBtn = document.getElementById('tracerJumpToVisualizerBtn');
+
+            if (jumpToCodeBtn) {
+                jumpToCodeBtn.addEventListener('click', function() {
+                    var tracerView = document.getElementById('codeTracerView');
+                    if (tracerView) {
+                        tracerView.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                });
+            }
+
+            if (jumpToVisBtn) {
+                jumpToVisBtn.addEventListener('click', function() {
+                    var tracerView = document.getElementById('codeTracerView');
+                    var target = document.getElementById('tracerStepperPanel') || document.getElementById('tracerResultsContainer');
+                    if (tracerView && target) {
+                        var offset = target.offsetTop - 12;
+                        tracerView.scrollTo({ top: offset > 0 ? offset : 0, behavior: 'smooth' });
+                    }
+                });
+            }
+
+            // Step narrative quick-jump links
+            var jumpTabBtns = document.querySelectorAll('.step-jump-tab-btn');
+            for (var j = 0; j < jumpTabBtns.length; j++) {
+                jumpTabBtns[j].addEventListener('click', function() {
+                    var targetTab = this.getAttribute('data-jump-tab');
+                    if (targetTab) switchTracerTab(targetTab);
                 });
             }
 
